@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { ActionFilter, actionMatches } from './components/ActionFilter.js'
 import { ColumnPicker } from './components/ColumnPicker.js'
@@ -8,6 +8,7 @@ import { EventDetail } from './components/EventDetail.js'
 import { EventTable } from './components/EventTable.js'
 import { useClaims } from './hooks/useClaims.js'
 import { useEvents } from './hooks/useEvents.js'
+import { fetchTokenViaOpts } from './lib/api.js'
 import type { EmbedError } from './lib/api.js'
 import { ALL_COLUMNS } from './lib/columns.js'
 import type { Event } from './lib/types.js'
@@ -24,20 +25,81 @@ const DEFAULT_VISIBLE_COLUMNS = [
 ]
 
 export interface EverscribeEventsProps {
-  token: string
+  /**
+   * Embed JWT. If omitted, the component fetches an initial token via
+   * `tokenEndpoint` or `onTokenExpired` on mount.
+   */
+  token?: string
   apiBase?: string
   pageSize?: number
   pollInterval?: number
   theme?: 'light' | 'dark'
   className?: string
   style?: CSSProperties
+  /**
+   * URL on your backend that returns `{ token }` JSON. Used both for the
+   * initial fetch (when `token` is omitted) and for refresh on 401. Sent
+   * with `credentials: 'include'`.
+   */
   tokenEndpoint?: string
+  /**
+   * Custom token-fetch callback. Takes precedence over `tokenEndpoint`
+   * for both initial load and refresh.
+   */
   onTokenExpired?: () => Promise<string>
   onError?: (err: Error) => void
 }
 
+type BootstrapState =
+  | { phase: 'idle' }
+  | { phase: 'loading' }
+  | { phase: 'ready'; token: string }
+  | { phase: 'error'; reason: 'config' | 'fetch' }
+
 export function EverscribeEvents(props: EverscribeEventsProps) {
-  const claims = useClaims(props.token)
+  const [bootstrap, setBootstrap] = useState<BootstrapState>(() =>
+    props.token ? { phase: 'ready', token: props.token } : { phase: 'idle' },
+  )
+  const [retryCount, setRetryCount] = useState(0)
+
+  // If a token prop is supplied (or changes), use it as the source of truth.
+  useEffect(() => {
+    if (props.token) setBootstrap({ phase: 'ready', token: props.token })
+  }, [props.token])
+
+  // Bootstrap fetch when no token prop is supplied. Read endpoint /
+  // callback via a ref so inline handlers (`onTokenExpired={() => ...}`)
+  // don't retrigger the effect on every render.
+  const propsRef = useRef(props)
+  propsRef.current = props
+
+  useEffect(() => {
+    if (propsRef.current.token) return
+    if (!propsRef.current.tokenEndpoint && !propsRef.current.onTokenExpired) {
+      setBootstrap({ phase: 'error', reason: 'config' })
+      return
+    }
+    setBootstrap({ phase: 'loading' })
+    let cancelled = false
+    void (async () => {
+      const t = await fetchTokenViaOpts({
+        tokenEndpoint: propsRef.current.tokenEndpoint,
+        onTokenExpired: propsRef.current.onTokenExpired,
+      })
+      if (cancelled) return
+      if (!t) {
+        setBootstrap({ phase: 'error', reason: 'fetch' })
+        return
+      }
+      setBootstrap({ phase: 'ready', token: t })
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [props.token, retryCount])
+
+  const activeToken = bootstrap.phase === 'ready' ? bootstrap.token : null
+  const claims = useClaims(activeToken)
   const [selected, setSelected] = useState<Event | null>(null)
   const [actionFilter, setActionFilter] = useState<string | null>(null)
 
@@ -67,7 +129,7 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
 
   const { events, hasMore, status, error, loadMore, refresh } = useEvents({
     apiBase: props.apiBase ?? DEFAULT_API_BASE,
-    token: props.token,
+    token: activeToken,
     pageSize: props.pageSize ?? DEFAULT_PAGE_SIZE,
     pollInterval: props.pollInterval ?? DEFAULT_POLL_INTERVAL_MS,
     tokenEndpoint: props.tokenEndpoint,
@@ -87,6 +149,42 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
   ]
     .filter(Boolean)
     .join(' ')
+
+  if (bootstrap.phase === 'error' && bootstrap.reason === 'config') {
+    return (
+      <div className={rootClassName} style={props.style}>
+        <div className="evs-state evs-state-error">
+          Configure <code>token</code>, <code>tokenEndpoint</code>, or{' '}
+          <code>onTokenExpired</code>.
+        </div>
+      </div>
+    )
+  }
+
+  if (bootstrap.phase === 'error' && bootstrap.reason === 'fetch') {
+    return (
+      <div className={rootClassName} style={props.style}>
+        <div className="evs-state evs-state-error">
+          <span>Couldn’t fetch token.</span>
+          <button
+            type="button"
+            className="evs-button"
+            onClick={() => setRetryCount((c) => c + 1)}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (bootstrap.phase !== 'ready') {
+    return (
+      <div className={rootClassName} style={props.style}>
+        <div className="evs-state evs-state-loading">Loading…</div>
+      </div>
+    )
+  }
 
   if (claims === null) {
     return (
