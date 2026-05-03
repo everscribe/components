@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { EmbedError, listEvents } from '../lib/api.js'
+import { EmbedError, fetchTokenViaOpts, listEvents } from '../lib/api.js'
 import type { ListEventsResponse } from '../lib/api.js'
 import type { Event } from '../lib/types.js'
 
@@ -11,7 +11,7 @@ export type EventsStatus = 'loading' | 'ok' | 'error' | 'expired'
 
 export interface UseEventsOptions {
   apiBase: string
-  token: string
+  token: string | null
   pageSize: number
   pollInterval: number
   tokenEndpoint?: string
@@ -45,12 +45,13 @@ export function useEvents(opts: UseEventsOptions): UseEventsResult {
   const cursorRef = useRef(nextCursor)
   cursorRef.current = nextCursor
 
-  const tokenRef = useRef(opts.token)
+  const tokenRef = useRef<string | null>(opts.token)
   useEffect(() => {
-    tokenRef.current = opts.token
+    if (opts.token) tokenRef.current = opts.token
   }, [opts.token])
 
   const fetchPage = useCallback(async (kind: FetchKind, signal: AbortSignal) => {
+    if (!tokenRef.current) return
     const o = optsRef.current
     const params: ListEventsParams = { limit: o.pageSize }
 
@@ -75,7 +76,7 @@ export function useEvents(opts: UseEventsOptions): UseEventsResult {
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') throw err
         if (allowRefresh && err instanceof EmbedError && err.kind === 'unauthorized') {
-          const newToken = await refreshTokenViaOpts(o)
+          const newToken = await fetchTokenViaOpts(o)
           if (!newToken) throw err
           tokenRef.current = newToken
           return fetchWithRefresh(newToken, false)
@@ -117,6 +118,7 @@ export function useEvents(opts: UseEventsOptions): UseEventsResult {
     setEvents([])
     setNextCursor(null)
     setError(null)
+    if (!opts.token) return
     const ctrl = new AbortController()
     fetchPage('initial', ctrl.signal)
     return () => ctrl.abort()
@@ -206,21 +208,6 @@ export function useEvents(opts: UseEventsOptions): UseEventsResult {
 }
 
 type ListEventsParams = NonNullable<Parameters<typeof listEvents>[0]['params']>
-
-async function refreshTokenViaOpts(o: UseEventsOptions): Promise<string | null> {
-  try {
-    if (o.onTokenExpired) return await o.onTokenExpired()
-    if (o.tokenEndpoint) {
-      const res = await fetch(o.tokenEndpoint, { credentials: 'include' })
-      if (!res.ok) return null
-      const body = (await res.json()) as { token?: string }
-      return body.token ?? null
-    }
-    return null
-  } catch {
-    return null
-  }
-}
 
 function networkErr(cause: unknown): EmbedError {
   return new EmbedError({ kind: 'network', cause, message: 'network error' })
