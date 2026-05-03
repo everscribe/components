@@ -21,11 +21,13 @@ import { EverscribeEvents } from '@everscribe/react'
 import '@everscribe/react/styles.css'
 
 export function AuditPage() {
-  return <EverscribeEvents tokenEndpoint="/api/embed-token" />
+  return <EverscribeEvents tokenEndpoint="https://yourbackend.com/api/embed-token" />
 }
 ```
 
-Where `/api/embed-token` is a route on **your** backend that returns a freshly minted embed token. The component fetches it on mount, holds it in memory, and re-fetches from the same endpoint on 401. Your project API key never touches the browser.
+Where `https://yourbackend.com/api/embed-token` is a route on **your** server (not Everscribe's) that returns a freshly minted embed token. The component fetches it on mount, holds it in memory, and re-fetches from the same endpoint on 401. Your project API key never touches the browser.
+
+If your React app and backend share an origin, a relative path (`/api/embed-token`) works too.
 
 If you'd rather control the initial fetch yourself, pass `token` as a prop instead — see [Initial token loading](#initial-token-loading).
 
@@ -60,7 +62,7 @@ token, err := aud.MintToken(ctx, auditor.TokenOptions{
 })
 ```
 
-Expose this behind a route on your backend (e.g. `GET /api/embed-token`) that authenticates the request using your normal session and returns the response as JSON:
+Expose this behind a route on your backend (e.g. `GET https://yourbackend.com/api/embed-token`) that authenticates the request using your normal session and returns the response as JSON:
 
 ```json
 { "token": "eyJhbGc...", "expires_at": "...", "expires_in": 3600 }
@@ -75,7 +77,7 @@ The component supports two patterns:
 **Component-managed (recommended).** Pass `tokenEndpoint`; the component fetches the initial token on mount and re-fetches on 401. Cleanest customer code:
 
 ```tsx
-<EverscribeEvents tokenEndpoint="/api/embed-token" />
+<EverscribeEvents tokenEndpoint="https://yourbackend.com/api/embed-token" />
 ```
 
 **Customer-managed.** Fetch the token in your own code, pass it as the `token` prop. Useful if you need explicit control over loading states, want to integrate with an auth context, or already have the token in hand:
@@ -89,13 +91,13 @@ export function AuditPage() {
   const [token, setToken] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/embed-token', { credentials: 'include' })
+    fetch('https://yourbackend.com/api/embed-token', { credentials: 'include' })
       .then((r) => r.json())
       .then(({ token }) => setToken(token))
   }, [])
 
   if (!token) return <div>Loading…</div>
-  return <EverscribeEvents token={token} tokenEndpoint="/api/embed-token" />
+  return <EverscribeEvents token={token} tokenEndpoint="https://yourbackend.com/api/embed-token" />
 }
 ```
 
