@@ -122,3 +122,23 @@ function parseRetryAfter(value: string | null): number | undefined {
 function joinUrl(base: string, path: string): string {
   return `${base.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
 }
+
+export interface TokenSourceOptions {
+  tokenEndpoint?: string
+  onTokenExpired?: () => Promise<string>
+}
+
+export async function fetchTokenViaOpts(opts: TokenSourceOptions): Promise<string | null> {
+  try {
+    if (opts.onTokenExpired) return await opts.onTokenExpired()
+    if (opts.tokenEndpoint) {
+      const res = await fetch(opts.tokenEndpoint, { credentials: 'include' })
+      if (!res.ok) return null
+      const body = (await res.json()) as { token?: string }
+      return body.token ?? null
+    }
+    return null
+  } catch {
+    return null
+  }
+}
