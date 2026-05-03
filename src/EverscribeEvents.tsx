@@ -1,6 +1,22 @@
 'use client'
 
+import { useMemo } from 'react'
 import type { CSSProperties } from 'react'
+import { EventTable } from './components/EventTable.js'
+import { useClaims } from './hooks/useClaims.js'
+import { useEvents } from './hooks/useEvents.js'
+import type { EmbedError } from './lib/api.js'
+
+const DEFAULT_API_BASE = 'https://everscribe.io/api/v1/embed'
+const DEFAULT_PAGE_SIZE = 25
+const DEFAULT_POLL_INTERVAL_MS = 5000
+const DEFAULT_VISIBLE_COLUMNS = [
+  'occurred_at',
+  'action',
+  'actor',
+  'target',
+  'tenant_id',
+]
 
 export interface EverscribeEventsProps {
   token: string
@@ -16,9 +32,85 @@ export interface EverscribeEventsProps {
 }
 
 export function EverscribeEvents(props: EverscribeEventsProps) {
+  const claims = useClaims(props.token)
+
+  const visibleColumns = useMemo(() => {
+    if (claims?.columns && claims.columns.length > 0) return claims.columns
+    return DEFAULT_VISIBLE_COLUMNS
+  }, [claims])
+
+  const { events, hasMore, status, error, loadMore, refresh } = useEvents({
+    apiBase: props.apiBase ?? DEFAULT_API_BASE,
+    token: props.token,
+    pageSize: props.pageSize ?? DEFAULT_PAGE_SIZE,
+    pollInterval: props.pollInterval ?? DEFAULT_POLL_INTERVAL_MS,
+    tokenEndpoint: props.tokenEndpoint,
+    onTokenExpired: props.onTokenExpired,
+    onError: props.onError,
+  })
+
+  const rootClassName = [
+    'evs-root',
+    `evs-theme-${props.theme ?? 'light'}`,
+    props.className,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  if (claims === null) {
+    return (
+      <div className={rootClassName} style={props.style}>
+        <div className="evs-state evs-state-error">Invalid token.</div>
+      </div>
+    )
+  }
+
   return (
-    <div className={props.className} style={props.style}>
-      Everscribe Events (stub)
+    <div className={rootClassName} style={props.style}>
+      {status === 'loading' && events.length === 0 && (
+        <div className="evs-state evs-state-loading">Loading…</div>
+      )}
+      {status === 'expired' && (
+        <div className="evs-state evs-state-error">Session expired.</div>
+      )}
+      {status === 'error' && error && (
+        <div className="evs-state evs-state-error">
+          <span>{errorMessage(error)}</span>
+          <button type="button" className="evs-button" onClick={refresh}>
+            Retry
+          </button>
+        </div>
+      )}
+      {status === 'ok' && events.length === 0 && (
+        <div className="evs-state evs-state-empty">No events yet.</div>
+      )}
+      {events.length > 0 && (
+        <>
+          <EventTable events={events} visibleColumns={visibleColumns} />
+          {hasMore && (
+            <button type="button" className="evs-button evs-load-more" onClick={loadMore}>
+              Load more
+            </button>
+          )}
+        </>
+      )}
     </div>
   )
+}
+
+function errorMessage(err: EmbedError): string {
+  switch (err.kind) {
+    case 'unauthorized':
+      return 'Authentication failed.'
+    case 'not_found':
+      return 'Not found.'
+    case 'rate_limited':
+      return 'Too many requests. Please slow down.'
+    case 'bad_request':
+      return err.message || 'Bad request.'
+    case 'server':
+      return 'Server error. Please try again.'
+    case 'network':
+      return 'Network error. Check your connection.'
+  }
 }
