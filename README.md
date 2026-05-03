@@ -66,7 +66,7 @@ import (
     "time"
 
     "github.com/everscribe/sdk-go"
-    "github.com/everscribe/sdk-go/pkg/auditor"
+    "github.com/everscribe/sdk-go/pkg/minter"
 )
 
 func main() {
@@ -74,15 +74,15 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
-    aud := es.NewAuditor()
+    m := es.NewMinter()
 
-    http.HandleFunc("GET /api/embed-token", handleEmbedToken(aud))
+    http.HandleFunc("GET /api/embed-token", handleEmbedToken(m))
     log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 // handleEmbedToken returns a handler that mints a fresh embed token for the
 // authenticated user. The React component calls this on mount and on 401.
-func handleEmbedToken(aud *auditor.Client) http.HandlerFunc {
+func handleEmbedToken(m *minter.Client) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         user, err := authenticate(r) // your normal session-cookie auth
         if err != nil {
@@ -90,7 +90,7 @@ func handleEmbedToken(aud *auditor.Client) http.HandlerFunc {
             return
         }
 
-        token, err := aud.MintToken(r.Context(), auditor.TokenOptions{
+        token, err := m.MintToken(r.Context(), minter.TokenOptions{
             TenantID:       user.TenantID,
             ExpiresIn:      time.Hour,
             AllowedColumns: []string{"occurred_at", "action", "actor"},
@@ -117,7 +117,7 @@ See the [sdk-go README](https://github.com/everscribe/sdk-go#embedded-views) for
 [your backend] ──mint──> token ──passes to──> [your frontend] ──Bearer──> [Everscribe API]
 ```
 
-1. **Your backend** holds the project API key (`evs_<32hex>`). Use `sdk-go/pkg/auditor` to mint short-lived embed tokens.
+1. **Your backend** holds the project API key (`evs_<32hex>`). Use `sdk-go/pkg/minter` to mint short-lived embed tokens.
 2. **Your frontend** fetches a token from a route you expose, then passes it to `<EverscribeEvents />`.
 3. **The Everscribe API** verifies the token on every read and scopes results to its claims.
 
