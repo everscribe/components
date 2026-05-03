@@ -31,6 +31,63 @@ If your React app and backend share an origin, a relative path (`/api/embed-toke
 
 If you'd rather control the initial fetch yourself, pass `token` as a prop instead — see [Initial token loading](#initial-token-loading).
 
+## Minting tokens (your backend)
+
+The `tokenEndpoint` from the examples above is a route on your backend that mints a token via [sdk-go](https://github.com/everscribe/sdk-go) and returns it to the frontend:
+
+```go
+import (
+    "encoding/json"
+    "log"
+    "net/http"
+    "time"
+
+    "github.com/everscribe/sdk-go"
+    "github.com/everscribe/sdk-go/pkg/auditor"
+)
+
+func main() {
+    es, err := everscribe.New(projectID, apiKey)
+    if err != nil {
+        log.Fatal(err)
+    }
+    aud := es.NewAuditor()
+
+    http.HandleFunc("GET /api/embed-token", handleEmbedToken(aud))
+    log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+// handleEmbedToken returns a handler that mints a fresh embed token for the
+// authenticated user. The React component calls this on mount and on 401.
+func handleEmbedToken(aud *auditor.Client) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        user, err := authenticate(r) // your normal session-cookie auth
+        if err != nil {
+            http.Error(w, "unauthorized", http.StatusUnauthorized)
+            return
+        }
+
+        token, err := aud.MintToken(r.Context(), auditor.TokenOptions{
+            TenantID:       user.TenantID,
+            ExpiresIn:      time.Hour,
+            AllowedColumns: []string{"occurred_at", "action", "actor"},
+            AllowedActions: []string{"user.*", "billing.invoice.created"},
+        })
+        if err != nil {
+            http.Error(w, "mint failed", http.StatusInternalServerError)
+            return
+        }
+
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(map[string]string{"token": token})
+    }
+}
+```
+
+The component reads `token` from the response. You can include additional fields (`expires_at`, etc.) if your own UI needs them — the component ignores them.
+
+See the [sdk-go README](https://github.com/everscribe/sdk-go#embedded-views) for full SDK docs.
+
 ## How it fits together
 
 ```
@@ -42,33 +99,6 @@ If you'd rather control the initial fetch yourself, pass `token` as a prop inste
 3. **The Everscribe API** verifies the token on every read and scopes results to its claims.
 
 The API key never touches the browser. Tokens do, and they're designed for it: short TTL, narrow scope, read-only.
-
-## Minting tokens (backend)
-
-```go
-import (
-    "github.com/everscribe/sdk-go"
-    "github.com/everscribe/sdk-go/pkg/auditor"
-)
-
-es, _ := everscribe.New(projectID, apiKey)
-aud := es.NewAuditor()
-
-token, err := aud.MintToken(ctx, auditor.TokenOptions{
-    TenantID:       "acme-corp",
-    ExpiresIn:      time.Hour,
-    AllowedColumns: []string{"occurred_at", "action", "actor"},
-    AllowedActions: []string{"user.*", "billing.invoice.created"},
-})
-```
-
-Expose this behind a route on your backend (e.g. `GET https://yourbackend.com/api/embed-token`) that authenticates the request using your normal session and returns the response as JSON:
-
-```json
-{ "token": "eyJhbGc...", "expires_at": "...", "expires_in": 3600 }
-```
-
-The component reads the `token` field. The other fields are forwarded for your convenience and ignored here. See the [sdk-go README](https://github.com/everscribe/sdk-go#embedded-views) for full API docs.
 
 ## Initial token loading
 
