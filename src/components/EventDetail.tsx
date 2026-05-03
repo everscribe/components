@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { Event } from '../lib/types.js'
-import { COLUMN_LABELS, FIELD_ORDER } from '../lib/columns.js'
+import { ALL_COLUMNS, COLUMN_LABELS } from '../lib/columns.js'
 
 export interface EventDetailProps {
   event: Event
@@ -83,7 +83,7 @@ function orderFields(event: Event): Array<[string, unknown]> {
   const obj = event as unknown as Record<string, unknown>
   const ordered: Array<[string, unknown]> = []
   const seen = new Set<string>()
-  for (const key of FIELD_ORDER) {
+  for (const key of ALL_COLUMNS) {
     if (key in obj && obj[key] != null) {
       ordered.push([key, obj[key]])
       seen.add(key)
