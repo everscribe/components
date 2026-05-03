@@ -1,24 +1,11 @@
 import type { Event } from '../lib/types.js'
+import { COLUMN_LABELS } from '../lib/columns.js'
 import { EventRow } from './EventRow.js'
 
 export interface EventTableProps {
   events: Event[]
   visibleColumns: string[]
   onRowClick?: (event: Event) => void
-}
-
-const COLUMN_LABELS: Record<string, string> = {
-  id: 'ID',
-  tenant_id: 'Tenant',
-  occurred_at: 'When',
-  actor: 'Actor',
-  action: 'Action',
-  target: 'Target',
-  metadata: 'Metadata',
-  origin: 'Origin',
-  result: 'Result',
-  change: 'Change',
-  idempotency_key: 'Idempotency key',
 }
 
 export function EventTable({ events, visibleColumns, onRowClick }: EventTableProps) {

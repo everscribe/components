@@ -1,11 +1,13 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { EventDetail } from './components/EventDetail.js'
 import { EventTable } from './components/EventTable.js'
 import { useClaims } from './hooks/useClaims.js'
 import { useEvents } from './hooks/useEvents.js'
 import type { EmbedError } from './lib/api.js'
+import type { Event } from './lib/types.js'
 
 const DEFAULT_API_BASE = 'https://everscribe.io/api/v1/embed'
 const DEFAULT_PAGE_SIZE = 25
@@ -33,6 +35,7 @@ export interface EverscribeEventsProps {
 
 export function EverscribeEvents(props: EverscribeEventsProps) {
   const claims = useClaims(props.token)
+  const [selected, setSelected] = useState<Event | null>(null)
 
   const visibleColumns = useMemo(() => {
     if (claims?.columns && claims.columns.length > 0) return claims.columns
@@ -86,13 +89,24 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
       )}
       {events.length > 0 && (
         <>
-          <EventTable events={events} visibleColumns={visibleColumns} />
+          <EventTable
+            events={events}
+            visibleColumns={visibleColumns}
+            onRowClick={setSelected}
+          />
           {hasMore && (
             <button type="button" className="evs-button evs-load-more" onClick={loadMore}>
               Load more
             </button>
           )}
         </>
+      )}
+      {selected && (
+        <EventDetail
+          key={selected.id}
+          event={selected}
+          onClose={() => setSelected(null)}
+        />
       )}
     </div>
   )
