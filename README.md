@@ -20,12 +20,14 @@ Peer dependencies: `react >=18`, `react-dom >=18`.
 import { EverscribeEvents } from '@everscribe/react'
 import '@everscribe/react/styles.css'
 
-export function AuditPage({ token }: { token: string }) {
-  return <EverscribeEvents token={token} />
+export function AuditPage() {
+  return <EverscribeEvents tokenEndpoint="/api/embed-token" />
 }
 ```
 
-The `token` is a short-lived JWT minted on **your** backend. The component never sees your project API key, only the token.
+Where `/api/embed-token` is a route on **your** backend that returns a freshly minted embed token. The component fetches it on mount, holds it in memory, and re-fetches from the same endpoint on 401. Your project API key never touches the browser.
+
+If you'd rather control the initial fetch yourself, pass `token` as a prop instead — see [Initial token loading](#initial-token-loading).
 
 ## How it fits together
 
@@ -58,32 +60,75 @@ token, err := aud.MintToken(ctx, auditor.TokenOptions{
 })
 ```
 
-Expose a thin route on your backend that returns the same `{ token, expires_at, expires_in }` shape `MintToken` produces. Your frontend fetches it via your own auth (session cookie, etc.) and hands the token to the component. See the [sdk-go README](https://github.com/everscribe/sdk-go#embedded-views) for full API docs.
+Expose this behind a route on your backend (e.g. `GET /api/embed-token`) that authenticates the request using your normal session and returns the response as JSON:
+
+```json
+{ "token": "eyJhbGc...", "expires_at": "...", "expires_in": 3600 }
+```
+
+The component reads the `token` field. The other fields are forwarded for your convenience and ignored here. See the [sdk-go README](https://github.com/everscribe/sdk-go#embedded-views) for full API docs.
+
+## Initial token loading
+
+The component supports two patterns:
+
+**Component-managed (recommended).** Pass `tokenEndpoint`; the component fetches the initial token on mount and re-fetches on 401. Cleanest customer code:
+
+```tsx
+<EverscribeEvents tokenEndpoint="/api/embed-token" />
+```
+
+**Customer-managed.** Fetch the token in your own code, pass it as the `token` prop. Useful if you need explicit control over loading states, want to integrate with an auth context, or already have the token in hand:
+
+```tsx
+import { useEffect, useState } from 'react'
+import { EverscribeEvents } from '@everscribe/react'
+import '@everscribe/react/styles.css'
+
+export function AuditPage() {
+  const [token, setToken] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/embed-token', { credentials: 'include' })
+      .then((r) => r.json())
+      .then(({ token }) => setToken(token))
+  }, [])
+
+  if (!token) return <div>Loading…</div>
+  return <EverscribeEvents token={token} tokenEndpoint="/api/embed-token" />
+}
+```
+
+Pass `tokenEndpoint` (or `onTokenExpired`) alongside `token` so refresh on 401 still works after the initial mount.
+
+If you pass neither `token` nor `tokenEndpoint` nor `onTokenExpired`, the component renders a configuration error.
 
 ## Props
 
+At least one of `token`, `tokenEndpoint`, or `onTokenExpired` is required.
+
 | Prop | Type | Default | Notes |
 |---|---|---|---|
-| `token` | `string` | — | **Required.** Embed JWT. |
+| `token` | `string` | — | Embed JWT. If omitted, the component fetches one via `tokenEndpoint`/`onTokenExpired` on mount. |
+| `tokenEndpoint` | `string` | — | URL on your backend that returns `{ token }` JSON. Used for the initial fetch (when `token` is omitted) and for refresh on 401. Sent with `credentials: 'include'`. |
+| `onTokenExpired` | `() => Promise<string>` | — | Custom token-fetch callback. Takes precedence over `tokenEndpoint`. |
 | `apiBase` | `string` | `https://everscribe.io/api/v1/embed` | Base URL for read endpoints. Override for local dev or self-hosted. |
 | `pageSize` | `number` | `25` | Events per page. |
 | `pollInterval` | `number` | `5000` | Poll cadence in ms. `<= 0` disables polling. Below `1000` is clamped with a `console.warn`. |
 | `theme` | `'light' \| 'dark'` | `'light'` | Switches the CSS-variable theme. |
 | `className` | `string` | — | Merged onto the root element. |
 | `style` | `CSSProperties` | — | Inline style on the root. Use to override CSS variables at runtime. |
-| `tokenEndpoint` | `string` | — | URL the component will GET on 401 to fetch a fresh token. Sent with `credentials: 'include'`. Expects `{ token }` JSON. |
-| `onTokenExpired` | `() => Promise<string>` | — | Custom refresh callback. Takes precedence over `tokenEndpoint`. |
 | `onError` | `(err: Error) => void` | — | Observability hook for fetch errors. |
 
 ## Token refresh
 
-The component can't mint its own tokens — your API key isn't in the browser. On a 401, it falls through this chain:
+On a 401, the component falls through this chain:
 
 1. If `onTokenExpired` is set — call it, swap the returned token, retry.
 2. Else if `tokenEndpoint` is set — `fetch(tokenEndpoint, { credentials: 'include' })`, expect `{ token }`, retry.
 3. Otherwise — render a "Session expired" state.
 
-If your token endpoint uses the same session-cookie auth as the rest of your app, refresh is silent.
+If your token endpoint uses the same session-cookie auth as the rest of your app, refresh is silent. The same chain handles initial token loading when `token` isn't provided as a prop.
 
 ## Theming
 
