@@ -2,11 +2,14 @@
 
 import { useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { ActionFilter, actionMatches } from './components/ActionFilter.js'
+import { ColumnPicker } from './components/ColumnPicker.js'
 import { EventDetail } from './components/EventDetail.js'
 import { EventTable } from './components/EventTable.js'
 import { useClaims } from './hooks/useClaims.js'
 import { useEvents } from './hooks/useEvents.js'
 import type { EmbedError } from './lib/api.js'
+import { ALL_COLUMNS } from './lib/columns.js'
 import type { Event } from './lib/types.js'
 
 const DEFAULT_API_BASE = 'https://everscribe.io/api/v1/embed'
@@ -36,11 +39,31 @@ export interface EverscribeEventsProps {
 export function EverscribeEvents(props: EverscribeEventsProps) {
   const claims = useClaims(props.token)
   const [selected, setSelected] = useState<Event | null>(null)
+  const [actionFilter, setActionFilter] = useState<string | null>(null)
 
-  const visibleColumns = useMemo(() => {
+  const availableColumns = useMemo(() => {
     if (claims?.columns && claims.columns.length > 0) return claims.columns
-    return DEFAULT_VISIBLE_COLUMNS
+    return ALL_COLUMNS
   }, [claims])
+
+  const [visibleSet, setVisibleSet] = useState<Set<string>>(() => {
+    if (claims?.columns && claims.columns.length > 0) return new Set(claims.columns)
+    return new Set(DEFAULT_VISIBLE_COLUMNS)
+  })
+
+  const visibleColumns = useMemo(
+    () => availableColumns.filter((c) => visibleSet.has(c)),
+    [availableColumns, visibleSet],
+  )
+
+  const toggleColumn = (col: string) => {
+    setVisibleSet((prev) => {
+      const next = new Set(prev)
+      if (next.has(col)) next.delete(col)
+      else next.add(col)
+      return next
+    })
+  }
 
   const { events, hasMore, status, error, loadMore, refresh } = useEvents({
     apiBase: props.apiBase ?? DEFAULT_API_BASE,
@@ -51,6 +74,11 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
     onTokenExpired: props.onTokenExpired,
     onError: props.onError,
   })
+
+  const filteredEvents = useMemo(() => {
+    if (!actionFilter) return events
+    return events.filter((e) => actionMatches(e.action, actionFilter))
+  }, [events, actionFilter])
 
   const rootClassName = [
     'evs-root',
@@ -68,8 +96,25 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
     )
   }
 
+  const showActionFilter = (claims.actions?.length ?? 0) > 0
+
   return (
     <div className={rootClassName} style={props.style}>
+      <div className="evs-toolbar">
+        <ColumnPicker
+          available={availableColumns}
+          visible={visibleSet}
+          onToggle={toggleColumn}
+        />
+        {showActionFilter && (
+          <ActionFilter
+            actions={claims.actions!}
+            value={actionFilter}
+            onChange={setActionFilter}
+          />
+        )}
+      </div>
+
       {status === 'loading' && events.length === 0 && (
         <div className="evs-state evs-state-loading">Loading…</div>
       )}
@@ -87,10 +132,18 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
       {status === 'ok' && events.length === 0 && (
         <div className="evs-state evs-state-empty">No events yet.</div>
       )}
-      {events.length > 0 && (
+      {events.length > 0 && filteredEvents.length === 0 && (
+        <div className="evs-state evs-state-empty">
+          No events match the current filter.
+        </div>
+      )}
+      {filteredEvents.length > 0 && visibleColumns.length === 0 && (
+        <div className="evs-state evs-state-empty">No columns selected.</div>
+      )}
+      {filteredEvents.length > 0 && visibleColumns.length > 0 && (
         <>
           <EventTable
-            events={events}
+            events={filteredEvents}
             visibleColumns={visibleColumns}
             onRowClick={setSelected}
           />
@@ -101,6 +154,7 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
           )}
         </>
       )}
+
       {selected && (
         <EventDetail
           key={selected.id}
