@@ -29,7 +29,30 @@ Where `https://yourbackend.com/api/embed-token` is a route on **your** server (n
 
 If your React app and backend share an origin, a relative path (`/api/embed-token`) works too.
 
-If you'd rather control the initial fetch yourself, pass `token` as a prop instead — see [Initial token loading](#initial-token-loading).
+If you'd rather control the initial fetch yourself — explicit loading states, integration with an auth context, or a token already in hand — pass it as the `token` prop:
+
+```tsx
+import { useEffect, useState } from 'react'
+import { EverscribeEvents } from '@everscribe/react'
+import '@everscribe/react/styles.css'
+
+export function AuditPage() {
+  const [token, setToken] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('https://yourbackend.com/api/embed-token', { credentials: 'include' })
+      .then((r) => r.json())
+      .then(({ token }) => setToken(token))
+  }, [])
+
+  if (!token) return <div>Loading…</div>
+  return <EverscribeEvents token={token} tokenEndpoint="https://yourbackend.com/api/embed-token" />
+}
+```
+
+Pass `tokenEndpoint` (or `onTokenExpired`) alongside `token` so refresh on 401 still works.
+
+If you pass none of `token`, `tokenEndpoint`, or `onTokenExpired`, the component renders a configuration error.
 
 ## Minting tokens (your backend)
 
@@ -99,41 +122,6 @@ See the [sdk-go README](https://github.com/everscribe/sdk-go#embedded-views) for
 3. **The Everscribe API** verifies the token on every read and scopes results to its claims.
 
 The API key never touches the browser. Tokens do, and they're designed for it: short TTL, narrow scope, read-only.
-
-## Initial token loading
-
-The component supports two patterns:
-
-**Component-managed (recommended).** Pass `tokenEndpoint`; the component fetches the initial token on mount and re-fetches on 401. Cleanest customer code:
-
-```tsx
-<EverscribeEvents tokenEndpoint="https://yourbackend.com/api/embed-token" />
-```
-
-**Customer-managed.** Fetch the token in your own code, pass it as the `token` prop. Useful if you need explicit control over loading states, want to integrate with an auth context, or already have the token in hand:
-
-```tsx
-import { useEffect, useState } from 'react'
-import { EverscribeEvents } from '@everscribe/react'
-import '@everscribe/react/styles.css'
-
-export function AuditPage() {
-  const [token, setToken] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetch('https://yourbackend.com/api/embed-token', { credentials: 'include' })
-      .then((r) => r.json())
-      .then(({ token }) => setToken(token))
-  }, [])
-
-  if (!token) return <div>Loading…</div>
-  return <EverscribeEvents token={token} tokenEndpoint="https://yourbackend.com/api/embed-token" />
-}
-```
-
-Pass `tokenEndpoint` (or `onTokenExpired`) alongside `token` so refresh on 401 still works after the initial mount.
-
-If you pass neither `token` nor `tokenEndpoint` nor `onTokenExpired`, the component renders a configuration error.
 
 ## Props
 
