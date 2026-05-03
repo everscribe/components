@@ -12,7 +12,7 @@ export const COLUMN_LABELS: Record<string, string> = {
   idempotency_key: 'Idempotency key',
 }
 
-export const FIELD_ORDER = [
+export const ALL_COLUMNS = [
   'occurred_at',
   'action',
   'actor',
