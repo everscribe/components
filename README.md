@@ -1,4 +1,4 @@
-# @everscribe/react
+# @everscribe/events-react
 
 Embeddable React component for [Everscribe](https://everscribe.io) audit events.
 
@@ -9,7 +9,7 @@ Zero runtime dependencies beyond `react` and `react-dom`.
 ## Install
 
 ```bash
-npm install @everscribe/react
+npm install @everscribe/events-react
 ```
 
 Peer dependencies: `react >=18`, `react-dom >=18`.
@@ -17,8 +17,8 @@ Peer dependencies: `react >=18`, `react-dom >=18`.
 ## Quick start
 
 ```tsx
-import { EverscribeEvents } from '@everscribe/react'
-import '@everscribe/react/styles.css'
+import { EverscribeEvents } from '@everscribe/events-react'
+import '@everscribe/events-react/styles.css'
 
 export function AuditPage() {
   return <EverscribeEvents tokenEndpoint="https://yourbackend.com/api/embed-token" />
@@ -33,8 +33,8 @@ If you'd rather control the initial fetch yourself — explicit loading states, 
 
 ```tsx
 import { useEffect, useState } from 'react'
-import { EverscribeEvents } from '@everscribe/react'
-import '@everscribe/react/styles.css'
+import { EverscribeEvents } from '@everscribe/events-react'
+import '@everscribe/events-react/styles.css'
 
 export function AuditPage() {
   const [token, setToken] = useState<string | null>(null)

@@ -1,5 +1,5 @@
 {
-  "name": "@everscribe/react",
+  "name": "@everscribe/events-react",
   "version": "0.0.0",
   "description": "Embeddable React component for Everscribe audit events.",
   "license": "MIT",
