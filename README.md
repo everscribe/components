@@ -132,7 +132,7 @@ At least one of `token`, `tokenEndpoint`, or `onTokenExpired` is required.
 | `token` | `string` | — | Embed JWT. If omitted, the component fetches one via `tokenEndpoint`/`onTokenExpired` on mount. |
 | `tokenEndpoint` | `string` | — | URL on your backend that returns `{ token }` JSON. Used for the initial fetch (when `token` is omitted) and for refresh on 401. Sent with `credentials: 'include'`. |
 | `onTokenExpired` | `() => Promise<string>` | — | Custom token-fetch callback. Takes precedence over `tokenEndpoint`. |
-| `apiBase` | `string` | `https://everscribe.io/api/v1/embed` | Base URL for read endpoints. Override for local dev or self-hosted. |
+| `apiBase` | `string` | `https://api.everscribe.io/v1/embed` | Base URL for read endpoints. Override for local dev or self-hosted. |
 | `pageSize` | `number` | `25` | Events per page. |
 | `pollInterval` | `number` | `5000` | Poll cadence in ms. `<= 0` disables polling. Below `1000` is clamped with a `console.warn`. |
 | `theme` | `'light' \| 'dark'` | `'light'` | Switches the CSS-variable theme. |

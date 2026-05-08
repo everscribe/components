@@ -13,7 +13,7 @@ import type { EmbedError } from './lib/api.js'
 import { ALL_COLUMNS } from './lib/columns.js'
 import type { Event } from './lib/types.js'
 
-const DEFAULT_API_BASE = 'https://everscribe.io/api/v1/embed'
+const DEFAULT_API_BASE = 'https://api.everscribe.io/v1/embed'
 const DEFAULT_PAGE_SIZE = 25
 const DEFAULT_POLL_INTERVAL_MS = 5000
 const DEFAULT_VISIBLE_COLUMNS = [
