@@ -1,0 +1,79 @@
+# @everscribe/components-react
+
+Embeddable React component for [Everscribe](https://everscribe.io) audit events. Drop `<AuditTrail />` into your app, hand it a short-lived embed token, and your users see a live, scoped view of their audit trail.
+
+Part of [@everscribe/components](https://github.com/everscribe/components#readme) — see the root README for token minting, refresh chain, theming, security, rate limits, claim-driven UI, and other shared concepts.
+
+## Install
+
+```bash
+npm install @everscribe/components-react @everscribe/components-styles
+```
+
+Peer dependencies: `react >=18`, `react-dom >=18`. The `components-styles` package ships the default CSS theme; install it alongside.
+
+## Quick start
+
+```tsx
+import { AuditTrail } from '@everscribe/components-react'
+import '@everscribe/components-styles/default.css'
+
+export function AuditPage() {
+  return <AuditTrail tokenEndpoint="https://yourbackend.com/api/embed-token" />
+}
+```
+
+`tokenEndpoint` is a route on **your** server (not Everscribe's) that returns a freshly minted embed token. The component fetches it on mount, holds it in memory, and re-fetches from the same endpoint on 401. Your project API key never touches the browser. See [Minting tokens](https://github.com/everscribe/components#minting-tokens-your-backend) for the backend side.
+
+If your React app and backend share an origin, a relative path (`/api/embed-token`) works too.
+
+If you'd rather control the initial fetch yourself — explicit loading states, integration with an auth context, or a token already in hand — pass it as the `token` prop:
+
+```tsx
+import { useEffect, useState } from 'react'
+import { AuditTrail } from '@everscribe/components-react'
+import '@everscribe/components-styles/default.css'
+
+export function AuditPage() {
+  const [token, setToken] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('https://yourbackend.com/api/embed-token', { credentials: 'include' })
+      .then((r) => r.json())
+      .then(({ token }) => setToken(token))
+  }, [])
+
+  if (!token) return <div>Loading…</div>
+  return <AuditTrail token={token} tokenEndpoint="https://yourbackend.com/api/embed-token" />
+}
+```
+
+Pass `tokenEndpoint` (or `onTokenExpired`) alongside `token` so refresh on 401 still works.
+
+If you pass none of `token`, `tokenEndpoint`, or `onTokenExpired`, the component renders a configuration error.
+
+## Props
+
+At least one of `token`, `tokenEndpoint`, or `onTokenExpired` is required.
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `token` | `string` | — | Embed JWT. If omitted, the component fetches one via `tokenEndpoint`/`onTokenExpired` on mount. |
+| `tokenEndpoint` | `string` | — | URL on your backend that returns `{ token }` JSON. Used for the initial fetch (when `token` is omitted) and for refresh on 401. Sent with `credentials: 'include'`. |
+| `onTokenExpired` | `() => Promise<string>` | — | Custom token-fetch callback. Takes precedence over `tokenEndpoint`. |
+| `apiBase` | `string` | `https://api.everscribe.io/v1/embed` | Base URL for read endpoints. Override for local dev or self-hosted. |
+| `pageSize` | `number` | `25` | Events per page. |
+| `pollInterval` | `number` | `5000` | Poll cadence in ms. `<= 0` disables polling. Below `1000` is clamped with a `console.warn`. |
+| `theme` | `'light' \| 'dark'` | `'light'` | Switches the CSS-variable theme. |
+| `defaultTimeRange` | `'24h' \| '7d' \| '30d' \| 'all'` | `'all'` | Initial time-range preset for the filters panel. |
+| `className` | `string` | — | Merged onto the root element. |
+| `style` | `CSSProperties` | — | Inline style on the root. Use to override CSS variables at runtime. |
+| `onError` | `(err: Error) => void` | — | Observability hook for fetch errors. |
+
+## SSR / Next.js
+
+The component is marked `'use client'` — drop it into a Server Component tree as-is. The detail drawer mounts after hydration via a portal to `document.body`, so SSR output is unaffected.
+
+## License
+
+MIT
