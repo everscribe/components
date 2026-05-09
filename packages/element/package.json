@@ -1,0 +1,59 @@
+{
+  "name": "@everscribe/components-element",
+  "version": "0.0.0",
+  "description": "Framework-agnostic <audit-trail> custom element for Everscribe.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/everscribe/components.git",
+    "directory": "packages/element"
+  },
+  "homepage": "https://github.com/everscribe/components/tree/main/packages/element#readme",
+  "bugs": {
+    "url": "https://github.com/everscribe/components/issues"
+  },
+  "keywords": [
+    "everscribe",
+    "audit",
+    "events",
+    "web-component",
+    "custom-element",
+    "embed"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@everscribe/components-core": "workspace:*",
+    "@everscribe/components-styles": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
