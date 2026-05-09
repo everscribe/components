@@ -1,18 +1,24 @@
 import {
   ALL_COLUMNS,
   COLUMN_LABELS,
+  EmbedError,
   createDistinctValuesStore,
   createEventsStore,
+  exportEvents,
   fetchTokenViaOpts,
   parseClaims,
   type DistinctValues,
   type DistinctValuesStore,
   type EmbedClaims,
+  type Event,
   type EventsStore,
   type EventsStoreState,
+  type ExportFormat,
 } from '@everscribe/components-core'
 
 import { h } from './dom.js'
+import { openEventDetail } from './eventDetail.js'
+import { openExportModal } from './exportModal.js'
 import {
   countActiveColumnFilters,
   renderFiltersPanel,
@@ -99,6 +105,10 @@ export class AuditTrailElement extends HTMLElement {
   private beforeInput: HTMLInputElement | null = null
   private debounceTimer: ReturnType<typeof setTimeout> | null = null
 
+  // Modal cleanup hooks. Set when a modal is open; null otherwise.
+  private detailDispose: (() => void) | null = null
+  private exportDispose: (() => void) | null = null
+
   connectedCallback() {
     this.classList.add('audit-trail-root')
     this.classList.add(`audit-trail-theme-${this.themeAttr()}`)
@@ -171,6 +181,7 @@ export class AuditTrailElement extends HTMLElement {
   // ---- bootstrap ----
 
   private start() {
+    this.disposeModals()
     this.cleanupStores()
     this.bootstrapAbort?.abort()
     this.bootstrapAbort = null
@@ -300,7 +311,73 @@ export class AuditTrailElement extends HTMLElement {
       clearTimeout(this.debounceTimer)
       this.debounceTimer = null
     }
+    this.disposeModals()
     this.cleanupStores()
+  }
+
+  private disposeModals() {
+    this.detailDispose?.()
+    this.detailDispose = null
+    this.exportDispose?.()
+    this.exportDispose = null
+  }
+
+  private openDetail(event: Event) {
+    this.detailDispose?.()
+    this.detailDispose = openEventDetail({
+      event,
+      theme: this.themeAttr(),
+      onClose: () => {
+        this.detailDispose = null
+      },
+    })
+  }
+
+  private openExport() {
+    this.exportDispose?.()
+    this.exportDispose = openExportModal({
+      theme: this.themeAttr(),
+      onDownload: (format) => this.runExport(format),
+      onClose: () => {
+        this.exportDispose = null
+      },
+    })
+  }
+
+  private async runExport(format: ExportFormat) {
+    if (this.bootstrap.phase !== 'ready') throw new Error('Not authenticated.')
+    const apiBase = this.apiBaseAttr()
+    const tokenEndpoint = this.getAttribute('token-endpoint') ?? undefined
+    const { since, before } = resolveTimeBounds(this.filters)
+    const params = {
+      format,
+      since,
+      before,
+      action: this.filters.action,
+      actor: this.filters.actor,
+      actorType: this.filters.actorType,
+      targetType: this.filters.targetType,
+    }
+    const run = (token: string) => exportEvents({ apiBase, token, params })
+
+    let result
+    try {
+      result = await run(this.bootstrap.token)
+    } catch (err) {
+      if (err instanceof EmbedError && err.kind === 'unauthorized') {
+        const refreshed = await fetchTokenViaOpts({
+          tokenEndpoint,
+          onTokenExpired: this.onTokenExpired,
+        })
+        if (!refreshed) throw new Error('Authentication failed.')
+        result = await run(refreshed)
+      } else if (err instanceof EmbedError) {
+        throw new Error(exportErrorMessage(err))
+      } else {
+        throw err
+      }
+    }
+    triggerBrowserDownload(result.blob, result.filename)
   }
 
   private dispatchError(err: Error) {
@@ -465,15 +542,12 @@ export class AuditTrailElement extends HTMLElement {
     const live = livePollActive ? this.renderLiveIndicator() : null
     const spacer = h('span', { class: 'audit-trail-toolbar-spacer' })
     const filtersToggle = this.renderFiltersToggle()
-    // Phase D will mount the export modal. Phase C: stub button is
-    // visible but inert.
     const exportBtn = h(
       'button',
       { type: 'button', class: 'audit-trail-button' },
       'Export',
-    ) as HTMLButtonElement
-    exportBtn.disabled = true
-    exportBtn.title = 'Export — coming soon'
+    )
+    exportBtn.addEventListener('click', () => this.openExport())
     const picker = this.renderColumnPicker()
 
     const children: Node[] = []
@@ -581,7 +655,7 @@ export class AuditTrailElement extends HTMLElement {
       return [this.stateElement('empty', 'No columns selected.')]
     }
 
-    const out: Node[] = [renderTable(events, cols)]
+    const out: Node[] = [renderTable(events, cols, (event) => this.openDetail(event))]
     if (hasMore) {
       const more = h(
         'button',
@@ -599,5 +673,37 @@ export class AuditTrailElement extends HTMLElement {
     ...children: (Node | string)[]
   ): HTMLElement {
     return h('div', { class: `audit-trail-state audit-trail-state-${kind}` }, ...children)
+  }
+}
+
+// triggerBrowserDownload synthesizes an anchor click against a blob
+// URL so the browser saves the export with the server-suggested name.
+// The object URL is revoked on the next tick so the click has time to
+// land in slow / older browsers.
+function triggerBrowserDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
+function exportErrorMessage(err: EmbedError): string {
+  switch (err.kind) {
+    case 'rate_limited':
+      return 'Too many requests. Try again in a moment.'
+    case 'bad_request':
+      return err.message || 'Bad request.'
+    case 'server':
+      return 'Server error. Please try again.'
+    case 'network':
+      return 'Network error. Check your connection.'
+    case 'not_found':
+      return 'Not found.'
+    case 'unauthorized':
+      return 'Authentication failed.'
   }
 }
