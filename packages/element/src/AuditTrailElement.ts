@@ -1,4 +1,5 @@
 import {
+  ALL_COLUMNS,
   createDistinctValuesStore,
   createEventsStore,
   fetchTokenViaOpts,
@@ -11,6 +12,7 @@ import {
 } from '@everscribe/components-core'
 
 import { h } from './dom.js'
+import { renderTable } from './table.js'
 
 const DEFAULT_API_BASE = 'https://api.everscribe.io/v1/embed'
 const DEFAULT_PAGE_SIZE = 25
@@ -221,62 +223,95 @@ export class AuditTrailElement extends HTMLElement {
     )
   }
 
+  // ---- columns ----
+
+  // Available columns are driven by the token's `columns` claim when set;
+  // otherwise the picker-visible default. Mirrors the React component so
+  // both adapters honor the same scope.
+  private get availableColumns(): string[] {
+    if (this.bootstrap.phase !== 'ready') return ALL_COLUMNS
+    const cols = this.bootstrap.claims?.columns
+    if (cols && cols.length > 0) return cols
+    return ALL_COLUMNS
+  }
+
+  // Phase B: visibleColumns == availableColumns. Phase C introduces the
+  // column picker and a stored visibleSet.
+  private get visibleColumns(): string[] {
+    return this.availableColumns
+  }
+
   // ---- rendering ----
 
   private render() {
-    const view = this.renderView()
-    this.replaceChildren(view)
+    this.replaceChildren(...this.renderChildren())
   }
 
-  private renderView(): HTMLElement {
+  private renderChildren(): Node[] {
     if (this.bootstrap.phase === 'error' && this.bootstrap.reason === 'config') {
-      return this.stateElement(
-        'error',
-        h(
-          'span',
-          null,
-          'Configure ',
-          h('code', null, 'token'),
-          ', ',
-          h('code', null, 'token-endpoint'),
-          ', or set the ',
-          h('code', null, 'onTokenExpired'),
-          ' property.',
+      return [
+        this.stateElement(
+          'error',
+          h(
+            'span',
+            null,
+            'Configure ',
+            h('code', null, 'token'),
+            ', ',
+            h('code', null, 'token-endpoint'),
+            ', or set the ',
+            h('code', null, 'onTokenExpired'),
+            ' property.',
+          ),
         ),
-      )
+      ]
     }
     if (this.bootstrap.phase === 'error' && this.bootstrap.reason === 'fetch') {
       const retry = h('button', { type: 'button', class: 'audit-trail-button' }, 'Retry')
       retry.addEventListener('click', () => this.start())
-      return this.stateElement(
-        'error',
-        h('span', null, "Couldn’t fetch token."),
-        retry,
-      )
+      return [this.stateElement('error', h('span', null, "Couldn’t fetch token."), retry)]
     }
     if (this.bootstrap.phase !== 'ready') {
-      return this.stateElement('loading', 'Loading…')
+      return [this.stateElement('loading', 'Loading…')]
     }
     if (this.bootstrap.claims === null) {
-      return this.stateElement('error', 'Invalid token.')
+      return [this.stateElement('error', 'Invalid token.')]
     }
 
-    // Phase A placeholder: confirms the stores are wired up. Phase B
-    // replaces this with the real table.
-    const count = this.eventsState?.events.length ?? 0
+    const events = this.eventsState?.events ?? []
     const status = this.eventsState?.status ?? 'loading'
-    if (status === 'loading' && count === 0) {
-      return this.stateElement('loading', 'Loading…')
+    const hasMore = (this.eventsState?.nextCursor ?? null) !== null
+    const cols = this.visibleColumns
+
+    if (status === 'loading' && events.length === 0) {
+      return [this.stateElement('loading', 'Loading…')]
     }
     if (status === 'expired') {
-      return this.stateElement('error', 'Session expired.')
+      return [this.stateElement('error', 'Session expired.')]
     }
     if (status === 'error') {
       const retry = h('button', { type: 'button', class: 'audit-trail-button' }, 'Retry')
       retry.addEventListener('click', () => this.eventsStore?.refresh())
-      return this.stateElement('error', 'Could not load events.', retry)
+      return [this.stateElement('error', 'Could not load events.', retry)]
     }
-    return this.stateElement('empty', `Ready — ${count} event${count === 1 ? '' : 's'} loaded.`)
+    if (events.length === 0) {
+      return [this.stateElement('empty', 'No events match.')]
+    }
+    if (cols.length === 0) {
+      return [this.stateElement('empty', 'No columns selected.')]
+    }
+
+    const out: Node[] = [renderTable(events, cols)]
+    if (hasMore) {
+      const more = h(
+        'button',
+        { type: 'button', class: 'audit-trail-button audit-trail-load-more' },
+        'Load more',
+      )
+      more.addEventListener('click', () => this.eventsStore?.loadMore())
+      out.push(more)
+    }
+    return out
   }
 
   private stateElement(
