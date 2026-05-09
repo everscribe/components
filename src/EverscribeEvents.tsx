@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { ActionFilter, actionMatches } from './components/ActionFilter.js'
 import { ColumnPicker } from './components/ColumnPicker.js'
 import { EventDetail } from './components/EventDetail.js'
 import { EventTable } from './components/EventTable.js'
+import { FiltersPanel } from './components/FiltersPanel.js'
+import type { FilterValues, TimeRangePreset } from './components/FiltersPanel.js'
 import { useClaims } from './hooks/useClaims.js'
+import { useDistinctValues } from './hooks/useDistinctValues.js'
 import { useEvents } from './hooks/useEvents.js'
 import { fetchTokenViaOpts } from './lib/api.js'
 import type { EmbedError } from './lib/api.js'
@@ -23,6 +25,8 @@ const DEFAULT_VISIBLE_COLUMNS = [
   'target',
   'tenant_id',
 ]
+
+export type DefaultTimeRange = '24h' | '7d' | '30d' | 'all'
 
 export interface EverscribeEventsProps {
   /**
@@ -48,6 +52,12 @@ export interface EverscribeEventsProps {
    */
   onTokenExpired?: () => Promise<string>
   onError?: (err: Error) => void
+  /**
+   * Initial time-range preset for the filters panel. Defaults to
+   * `'all'` to preserve historical embed behavior (no time bound).
+   * Set to `'7d'` to match the upstream events UI default.
+   */
+  defaultTimeRange?: DefaultTimeRange
 }
 
 type BootstrapState =
@@ -101,7 +111,10 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
   const activeToken = bootstrap.phase === 'ready' ? bootstrap.token : null
   const claims = useClaims(activeToken)
   const [selected, setSelected] = useState<Event | null>(null)
-  const [actionFilter, setActionFilter] = useState<string | null>(null)
+  const [filters, setFilters] = useState<FilterValues>(() => ({
+    range: (props.defaultTimeRange ?? 'all') as TimeRangePreset,
+  }))
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const availableColumns = useMemo(() => {
     if (claims?.columns && claims.columns.length > 0) return claims.columns
@@ -127,6 +140,18 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
     })
   }
 
+  const { since: filterSince, before: filterBefore } = useMemo(
+    () => resolveTimeBounds(filters),
+    [filters],
+  )
+
+  const distinct = useDistinctValues({
+    apiBase: props.apiBase ?? DEFAULT_API_BASE,
+    token: activeToken,
+    tokenEndpoint: props.tokenEndpoint,
+    onTokenExpired: props.onTokenExpired,
+  })
+
   const { events, hasMore, status, error, loadMore, refresh } = useEvents({
     apiBase: props.apiBase ?? DEFAULT_API_BASE,
     token: activeToken,
@@ -135,12 +160,13 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
     tokenEndpoint: props.tokenEndpoint,
     onTokenExpired: props.onTokenExpired,
     onError: props.onError,
+    since: filterSince,
+    before: filterBefore,
+    action: filters.action,
+    actor: filters.actor,
+    actorType: filters.actorType,
+    targetType: filters.targetType,
   })
-
-  const filteredEvents = useMemo(() => {
-    if (!actionFilter) return events
-    return events.filter((e) => actionMatches(e.action, actionFilter))
-  }, [events, actionFilter])
 
   const rootClassName = [
     'evs-root',
@@ -194,23 +220,21 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
     )
   }
 
-  const showActionFilter = (claims.actions?.length ?? 0) > 0
-
   return (
     <div className={rootClassName} style={props.style}>
       <div className="evs-toolbar">
+        <FiltersPanel
+          value={filters}
+          onChange={setFilters}
+          distinct={distinct}
+          open={filtersOpen}
+          onOpenChange={setFiltersOpen}
+        />
         <ColumnPicker
           available={availableColumns}
           visible={visibleSet}
           onToggle={toggleColumn}
         />
-        {showActionFilter && (
-          <ActionFilter
-            actions={claims.actions!}
-            value={actionFilter}
-            onChange={setActionFilter}
-          />
-        )}
       </div>
 
       {status === 'loading' && events.length === 0 && (
@@ -228,20 +252,15 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
         </div>
       )}
       {status === 'ok' && events.length === 0 && (
-        <div className="evs-state evs-state-empty">No events yet.</div>
+        <div className="evs-state evs-state-empty">No events match.</div>
       )}
-      {events.length > 0 && filteredEvents.length === 0 && (
-        <div className="evs-state evs-state-empty">
-          No events match the current filter.
-        </div>
-      )}
-      {filteredEvents.length > 0 && visibleColumns.length === 0 && (
+      {events.length > 0 && visibleColumns.length === 0 && (
         <div className="evs-state evs-state-empty">No columns selected.</div>
       )}
-      {filteredEvents.length > 0 && visibleColumns.length > 0 && (
+      {events.length > 0 && visibleColumns.length > 0 && (
         <>
           <EventTable
-            events={filteredEvents}
+            events={events}
             visibleColumns={visibleColumns}
             onRowClick={setSelected}
           />
@@ -262,6 +281,47 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
       )}
     </div>
   )
+}
+
+// resolveTimeBounds turns a FilterValues time-range preset into the
+// concrete (since, before) ISO strings the API expects. 'all' yields
+// no bounds; presets emit a relative `since` from now; 'custom' uses
+// the user's own datetime-local strings (which we promote to ISO).
+function resolveTimeBounds(filters: FilterValues): {
+  since?: string
+  before?: string
+} {
+  switch (filters.range) {
+    case '24h':
+      return { since: relativeIso(24 * 60 * 60 * 1000) }
+    case '7d':
+      return { since: relativeIso(7 * 24 * 60 * 60 * 1000) }
+    case '30d':
+      return { since: relativeIso(30 * 24 * 60 * 60 * 1000) }
+    case 'custom':
+      return {
+        since: localToIso(filters.since),
+        before: localToIso(filters.before),
+      }
+    case 'all':
+    default:
+      return {}
+  }
+}
+
+function relativeIso(ms: number): string {
+  return new Date(Date.now() - ms).toISOString()
+}
+
+function localToIso(value: string | undefined): string | undefined {
+  if (!value) return undefined
+  // datetime-local emits "YYYY-MM-DDTHH:mm" without a timezone; the
+  // browser interprets that as local time when passed to Date(), and
+  // toISOString normalizes to UTC. Round-trip is lossless for the
+  // minute-precision the input supports.
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return undefined
+  return d.toISOString()
 }
 
 function errorMessage(err: EmbedError): string {
