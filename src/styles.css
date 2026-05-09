@@ -694,22 +694,32 @@
 
 .evs-inspect-tabs {
   display: flex;
-  gap: var(--evs-spacing);
+  gap: var(--evs-spacing-xs);
   border-bottom: 1px solid var(--evs-border);
 }
 
 .evs-inspect-tab {
-  padding: var(--evs-spacing-sm) 0;
+  /* margin-bottom: -1px lets the tab's 2px bottom border overlap the
+   * row's 1px bottom border so the active indicator visually "joins"
+   * the divider instead of stacking next to it. border-radius: 0
+   * neutralizes the UA default on <button> — without it the bottom
+   * corners look rounded under the colored indicator. */
+  margin: 0 0 -1px;
+  padding: var(--evs-spacing-sm) var(--evs-spacing);
   border: none;
   border-bottom: 2px solid transparent;
+  border-radius: 0;
   background: none;
   color: var(--evs-fg-muted);
   font: inherit;
+  font-weight: 500;
   cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
 }
 
 .evs-inspect-tab:hover {
   color: var(--evs-fg);
+  border-bottom-color: var(--evs-border);
 }
 
 .evs-inspect-tab:focus-visible {
@@ -717,10 +727,10 @@
   outline-offset: 2px;
 }
 
-.evs-inspect-tab-active {
-  color: var(--evs-fg);
+.evs-inspect-tab-active,
+.evs-inspect-tab-active:hover {
+  color: var(--evs-accent);
   border-bottom-color: var(--evs-accent);
-  font-weight: 500;
 }
 
 .evs-inspect-panel {

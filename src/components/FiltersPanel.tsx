@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { DistinctValues } from '../hooks/useDistinctValues.js'
 
 export type TimeRangePreset = '24h' | '7d' | '30d' | 'custom' | 'all'
@@ -30,48 +30,76 @@ const TIME_PRESETS: ReadonlyArray<{ key: TimeRangePreset; label: string }> = [
   { key: 'all', label: 'All' },
 ]
 
+// Debounce window for the free-text actor input and the custom-range
+// datetime inputs. Long enough to absorb continuous typing / wheel
+// adjustments on the datepicker, short enough to feel responsive.
+const TEXT_DEBOUNCE_MS = 300
+
 export function FiltersPanel({ value, onChange, distinct }: FiltersPanelProps) {
-  // Draft state for fields that require explicit Apply. Time range
-  // presets bypass this (they apply immediately on click) — only
-  // Custom needs since/before drafting.
+  // Local draft state for the free-text + datetime inputs only —
+  // selects and time-range tabs commit immediately. The drafts let
+  // typing accumulate before we trip a refetch via the debounced
+  // commit effects below.
   const [draftSince, setDraftSince] = useState(value.since ?? '')
   const [draftBefore, setDraftBefore] = useState(value.before ?? '')
-  const [draftAction, setDraftAction] = useState(value.action ?? '')
   const [draftActor, setDraftActor] = useState(value.actor ?? '')
-  const [draftActorType, setDraftActorType] = useState(value.actorType ?? '')
-  const [draftTargetType, setDraftTargetType] = useState(value.targetType ?? '')
 
-  // Re-sync drafts when `value` changes externally (e.g. parent clears
-  // filters or switches between presets that reset since/before).
+  // Re-sync drafts when `value` changes externally (Clear button,
+  // time-range preset reset, parent-driven update).
   useEffect(() => {
     setDraftSince(value.since ?? '')
     setDraftBefore(value.before ?? '')
-    setDraftAction(value.action ?? '')
     setDraftActor(value.actor ?? '')
-    setDraftActorType(value.actorType ?? '')
-    setDraftTargetType(value.targetType ?? '')
-  }, [value])
+  }, [value.since, value.before, value.actor])
+
+  // valueRef + onChangeRef avoid stale closures inside the debounced
+  // commit effects — we always pull the freshest applied filters and
+  // the freshest onChange when the timer fires.
+  const valueRef = useRef(value)
+  valueRef.current = value
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+
+  // Debounced commit for the actor text input.
+  useEffect(() => {
+    const next = draftActor || undefined
+    if (next === valueRef.current.actor) return
+    const t = setTimeout(() => {
+      onChangeRef.current({ ...valueRef.current, actor: next })
+    }, TEXT_DEBOUNCE_MS)
+    return () => clearTimeout(t)
+  }, [draftActor])
+
+  // Debounced commit for the custom-range datetime inputs. Only
+  // active in custom mode — preset ranges discard since/before.
+  useEffect(() => {
+    if (valueRef.current.range !== 'custom') return
+    const nextSince = draftSince || undefined
+    const nextBefore = draftBefore || undefined
+    if (
+      nextSince === valueRef.current.since &&
+      nextBefore === valueRef.current.before
+    ) {
+      return
+    }
+    const t = setTimeout(() => {
+      onChangeRef.current({
+        ...valueRef.current,
+        since: nextSince,
+        before: nextBefore,
+      })
+    }, TEXT_DEBOUNCE_MS)
+    return () => clearTimeout(t)
+  }, [draftSince, draftBefore])
 
   const handlePresetClick = (range: TimeRangePreset) => {
     if (range === 'custom') {
-      // Switching into Custom mode just opens the inputs — apply waits
-      // for the user to fill them and click Apply.
+      // Switching into Custom mode opens the inputs — committing
+      // since/before is the datetime inputs' job.
       onChange({ ...value, range })
       return
     }
     onChange({ ...value, range, since: undefined, before: undefined })
-  }
-
-  const handleApply = () => {
-    onChange({
-      range: value.range,
-      since: value.range === 'custom' ? draftSince || undefined : undefined,
-      before: value.range === 'custom' ? draftBefore || undefined : undefined,
-      action: draftAction || undefined,
-      actor: draftActor || undefined,
-      actorType: draftActorType || undefined,
-      targetType: draftTargetType || undefined,
-    })
   }
 
   const handleClear = () => {
@@ -128,8 +156,10 @@ export function FiltersPanel({ value, onChange, distinct }: FiltersPanelProps) {
         <select
           className="evs-filter-select"
           aria-label="Action"
-          value={draftAction}
-          onChange={(e) => setDraftAction(e.target.value)}
+          value={value.action ?? ''}
+          onChange={(e) =>
+            onChange({ ...value, action: e.target.value || undefined })
+          }
         >
           <option value="">All actions</option>
           {distinct.actions.map((a) => (
@@ -142,8 +172,10 @@ export function FiltersPanel({ value, onChange, distinct }: FiltersPanelProps) {
         <select
           className="evs-filter-select"
           aria-label="Actor type"
-          value={draftActorType}
-          onChange={(e) => setDraftActorType(e.target.value)}
+          value={value.actorType ?? ''}
+          onChange={(e) =>
+            onChange({ ...value, actorType: e.target.value || undefined })
+          }
         >
           <option value="">All actor types</option>
           {distinct.actorTypes.map((t) => (
@@ -156,8 +188,10 @@ export function FiltersPanel({ value, onChange, distinct }: FiltersPanelProps) {
         <select
           className="evs-filter-select"
           aria-label="Target type"
-          value={draftTargetType}
-          onChange={(e) => setDraftTargetType(e.target.value)}
+          value={value.targetType ?? ''}
+          onChange={(e) =>
+            onChange({ ...value, targetType: e.target.value || undefined })
+          }
         >
           <option value="">All target types</option>
           {distinct.targetTypes.map((t) => (
@@ -178,11 +212,8 @@ export function FiltersPanel({ value, onChange, distinct }: FiltersPanelProps) {
         />
       </div>
 
-      <div className="evs-filter-actions">
-        <button type="button" className="evs-button" onClick={handleApply}>
-          Apply
-        </button>
-        {activeCount > 0 && (
+      {activeCount > 0 && (
+        <div className="evs-filter-actions">
           <button
             type="button"
             className="evs-button evs-button-secondary"
@@ -190,8 +221,8 @@ export function FiltersPanel({ value, onChange, distinct }: FiltersPanelProps) {
           >
             Clear
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
