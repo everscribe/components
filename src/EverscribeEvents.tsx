@@ -1,17 +1,18 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { ColumnPicker } from './components/ColumnPicker.js'
 import { EventDetail } from './components/EventDetail.js'
 import { EventTable } from './components/EventTable.js'
+import { ExportModal } from './components/ExportModal.js'
 import { FiltersPanel } from './components/FiltersPanel.js'
 import type { FilterValues, TimeRangePreset } from './components/FiltersPanel.js'
 import { useClaims } from './hooks/useClaims.js'
 import { useDistinctValues } from './hooks/useDistinctValues.js'
 import { useEvents } from './hooks/useEvents.js'
-import { fetchTokenViaOpts } from './lib/api.js'
-import type { EmbedError } from './lib/api.js'
+import { EmbedError, exportEvents, fetchTokenViaOpts } from './lib/api.js'
+import type { ExportFormat } from './lib/api.js'
 import { ALL_COLUMNS } from './lib/columns.js'
 import type { Event } from './lib/types.js'
 
@@ -115,6 +116,7 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
     range: (props.defaultTimeRange ?? 'all') as TimeRangePreset,
   }))
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
 
   const availableColumns = useMemo(() => {
     if (claims?.columns && claims.columns.length > 0) return claims.columns
@@ -167,6 +169,54 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
     actorType: filters.actorType,
     targetType: filters.targetType,
   })
+
+  const handleExportDownload = useCallback(
+    async (format: ExportFormat) => {
+      if (!activeToken) throw new Error('Not authenticated.')
+      const apiBase = props.apiBase ?? DEFAULT_API_BASE
+      const params = {
+        format,
+        since: filterSince,
+        before: filterBefore,
+        action: filters.action,
+        actor: filters.actor,
+        actorType: filters.actorType,
+        targetType: filters.targetType,
+      }
+      const run = (token: string) =>
+        exportEvents({ apiBase, token, params })
+      let result
+      try {
+        result = await run(activeToken)
+      } catch (err) {
+        if (err instanceof EmbedError && err.kind === 'unauthorized') {
+          const refreshed = await fetchTokenViaOpts({
+            tokenEndpoint: props.tokenEndpoint,
+            onTokenExpired: props.onTokenExpired,
+          })
+          if (!refreshed) throw new Error('Authentication failed.')
+          result = await run(refreshed)
+        } else if (err instanceof EmbedError) {
+          throw new Error(exportErrorMessage(err))
+        } else {
+          throw err
+        }
+      }
+      triggerBrowserDownload(result.blob, result.filename)
+    },
+    [
+      activeToken,
+      props.apiBase,
+      props.tokenEndpoint,
+      props.onTokenExpired,
+      filterSince,
+      filterBefore,
+      filters.action,
+      filters.actor,
+      filters.actorType,
+      filters.targetType,
+    ],
+  )
 
   const rootClassName = [
     'evs-root',
@@ -230,6 +280,13 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
           open={filtersOpen}
           onOpenChange={setFiltersOpen}
         />
+        <button
+          type="button"
+          className="evs-button"
+          onClick={() => setExportOpen(true)}
+        >
+          Export
+        </button>
         <ColumnPicker
           available={availableColumns}
           visible={visibleSet}
@@ -271,6 +328,12 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
           )}
         </>
       )}
+
+      <ExportModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        onDownload={handleExportDownload}
+      />
 
       {selected && (
         <EventDetail
@@ -322,6 +385,38 @@ function localToIso(value: string | undefined): string | undefined {
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return undefined
   return d.toISOString()
+}
+
+// triggerBrowserDownload synthesizes an anchor click against a blob
+// URL so the browser saves the export with the server-suggested name.
+// Object URL is revoked on the next tick so the click has time to
+// land in slow / older browsers.
+function triggerBrowserDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
+function exportErrorMessage(err: EmbedError): string {
+  switch (err.kind) {
+    case 'rate_limited':
+      return 'Too many requests. Try again in a moment.'
+    case 'bad_request':
+      return err.message || 'Bad request.'
+    case 'server':
+      return 'Server error. Please try again.'
+    case 'network':
+      return 'Network error. Check your connection.'
+    case 'not_found':
+      return 'Not found.'
+    case 'unauthorized':
+      return 'Authentication failed.'
+  }
 }
 
 function errorMessage(err: EmbedError): string {
