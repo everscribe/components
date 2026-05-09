@@ -7,7 +7,7 @@ import {
   listDistinctActions,
   listDistinctActorTypes,
   listDistinctTargetTypes,
-} from '../lib/api.js'
+} from '@everscribe/components-core'
 
 export interface DistinctValues {
   actions: string[]

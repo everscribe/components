@@ -13,10 +13,14 @@ import { LiveIndicator } from './components/LiveIndicator.js'
 import { useClaims } from './hooks/useClaims.js'
 import { useDistinctValues } from './hooks/useDistinctValues.js'
 import { useEvents } from './hooks/useEvents.js'
-import { EmbedError, exportEvents, fetchTokenViaOpts } from './lib/api.js'
-import type { ExportFormat } from './lib/api.js'
-import { ALL_COLUMNS } from './lib/columns.js'
-import type { Event } from './lib/types.js'
+import {
+  ALL_COLUMNS,
+  EmbedError,
+  exportEvents,
+  fetchTokenViaOpts,
+  type Event,
+  type ExportFormat,
+} from '@everscribe/components-core'
 
 const DEFAULT_API_BASE = 'https://api.everscribe.io/v1/embed'
 const DEFAULT_PAGE_SIZE = 25

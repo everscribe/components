@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { Event } from '../lib/types.js'
+import type { Event } from '@everscribe/components-core'
 
 export interface EventRowProps {
   event: Event

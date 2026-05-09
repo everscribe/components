@@ -1,4 +1,4 @@
-import { COLUMN_LABELS } from '../lib/columns.js'
+import { COLUMN_LABELS } from '@everscribe/components-core'
 
 export interface ColumnPickerProps {
   available: string[]

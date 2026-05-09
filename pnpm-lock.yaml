@@ -15,7 +15,20 @@ importers:
         specifier: ^5.6.0
         version: 5.9.3
 
+  packages/core:
+    devDependencies:
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(typescript@5.9.3)
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+
   packages/react:
+    dependencies:
+      '@everscribe/components-core':
+        specifier: workspace:*
+        version: link:../core
     devDependencies:
       '@types/react':
         specifier: ^18.3.0

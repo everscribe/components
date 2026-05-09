@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
-import { decodeJwtPayload } from '../lib/jwt.js'
-import type { EmbedClaims } from '../lib/types.js'
+import { decodeJwtPayload, type EmbedClaims } from '@everscribe/components-core'
 
 export function useClaims(token: string | null | undefined): EmbedClaims | null {
   return useMemo(() => {

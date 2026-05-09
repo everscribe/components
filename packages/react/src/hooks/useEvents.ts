@@ -1,9 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { EmbedError, fetchTokenViaOpts, listEvents } from '../lib/api.js'
-import type { ListEventsResponse } from '../lib/api.js'
-import type { Event } from '../lib/types.js'
+import {
+  EmbedError,
+  fetchTokenViaOpts,
+  listEvents,
+  type Event,
+  type ListEventsResponse,
+} from '@everscribe/components-core'
 
 const MIN_POLL_INTERVAL_MS = 1000
 

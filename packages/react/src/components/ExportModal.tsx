@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { ExportFormat } from '../lib/api.js'
+import type { ExportFormat } from '@everscribe/components-core'
 
 export interface ExportModalProps {
   open: boolean

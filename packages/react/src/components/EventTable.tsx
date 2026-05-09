@@ -1,5 +1,4 @@
-import type { Event } from '../lib/types.js'
-import { COLUMN_LABELS } from '../lib/columns.js'
+import { COLUMN_LABELS, type Event } from '@everscribe/components-core'
 import { EventRow } from './EventRow.js'
 
 export interface EventTableProps {

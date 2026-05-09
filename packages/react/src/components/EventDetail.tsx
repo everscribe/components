@@ -2,9 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { hasParseableDiff, renderDiff } from '../lib/diff.js'
-import type { DiffLine } from '../lib/diff.js'
-import type { Event } from '../lib/types.js'
+import {
+  hasParseableDiff,
+  renderDiff,
+  type DiffLine,
+  type Event,
+} from '@everscribe/components-core'
 
 export interface EventDetailProps {
   event: Event

@@ -1,14 +1,14 @@
 {
-  "name": "@everscribe/components-react",
+  "name": "@everscribe/components-core",
   "version": "0.0.0",
-  "description": "Embeddable React component for Everscribe audit events.",
+  "description": "Framework-agnostic core for Everscribe embeddable components.",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/everscribe/components.git",
-    "directory": "packages/react"
+    "directory": "packages/core"
   },
-  "homepage": "https://github.com/everscribe/components/tree/main/packages/react#readme",
+  "homepage": "https://github.com/everscribe/components/tree/main/packages/core#readme",
   "bugs": {
     "url": "https://github.com/everscribe/components/issues"
   },
@@ -16,7 +16,6 @@
     "everscribe",
     "audit",
     "events",
-    "react",
     "embed"
   ],
   "type": "module",
@@ -28,16 +27,12 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    },
-    "./styles.css": "./dist/styles.css"
+    }
   },
   "files": [
     "dist",
     "README.md",
     "LICENSE"
-  ],
-  "sideEffects": [
-    "**/*.css"
   ],
   "scripts": {
     "build": "tsup",
@@ -45,18 +40,7 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
-  "dependencies": {
-    "@everscribe/components-core": "workspace:*"
-  },
-  "peerDependencies": {
-    "react": ">=18",
-    "react-dom": ">=18"
-  },
   "devDependencies": {
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0"
   },
