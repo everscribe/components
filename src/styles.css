@@ -9,7 +9,13 @@
  *   }
  */
 
-.evs-root {
+/* Tokens are shared between the inline component scope (.evs-root) and
+ * the portal scope (.evs-portal) used for modals. Modals render via
+ * createPortal(document.body), so they sit OUTSIDE .evs-root and would
+ * otherwise lose every CSS variable. Theme overrides further down
+ * mirror the same structure. */
+.evs-root,
+.evs-portal {
   /* ---- Color tokens (light theme defaults) ---- */
   --evs-bg: #ffffff;
   --evs-fg: #1f2328;
@@ -43,7 +49,12 @@
   --evs-radius-sm: 4px;
   --evs-radius: 6px;
   --evs-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
 
+/* Component-scope styling. The .evs-portal wrapper deliberately
+ * carries only the tokens — backgrounds and font come from its
+ * children (the modal cards) so the wrapper itself is invisible. */
+.evs-root {
   font-family: var(--evs-font-family);
   font-size: var(--evs-font-size);
   line-height: var(--evs-line-height);
@@ -55,12 +66,16 @@
 
 .evs-root *,
 .evs-root *::before,
-.evs-root *::after {
-  box-sizing: inherit;
+.evs-root *::after,
+.evs-portal *,
+.evs-portal *::before,
+.evs-portal *::after {
+  box-sizing: border-box;
 }
 
 /* ---- Dark theme overrides ---- */
-.evs-root.evs-theme-dark {
+.evs-root.evs-theme-dark,
+.evs-portal.evs-theme-dark {
   --evs-bg: #0d1117;
   --evs-fg: #c9d1d9;
   --evs-fg-muted: #8b949e;
@@ -618,10 +633,10 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--evs-spacing);
-  width: min(960px, 100%);
-  max-height: calc(100vh - 2 * var(--evs-spacing));
-  padding: var(--evs-spacing-lg);
+  gap: var(--evs-spacing-sm);
+  width: min(720px, 100%);
+  max-height: 85vh;
+  padding: var(--evs-spacing-xl);
   border: 1px solid var(--evs-border);
   border-radius: var(--evs-radius);
   background: var(--evs-bg);

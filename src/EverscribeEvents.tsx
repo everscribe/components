@@ -353,6 +353,7 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
           key={selected.id}
           event={selected}
           onClose={() => setSelected(null)}
+          theme={props.theme ?? 'light'}
         />
       )}
     </div>

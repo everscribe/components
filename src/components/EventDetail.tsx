@@ -9,11 +9,15 @@ import type { Event } from '../lib/types.js'
 export interface EventDetailProps {
   event: Event
   onClose: () => void
+  // theme propagates the parent's theme into the portal so the modal's
+  // CSS variables (--evs-bg, --evs-fg, --evs-overlay, …) still resolve
+  // — the portal target is document.body, which sits outside .evs-root.
+  theme?: 'light' | 'dark'
 }
 
 type Tab = 'raw' | 'diff'
 
-export function EventDetail({ event, onClose }: EventDetailProps) {
+export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProps) {
   const [mounted, setMounted] = useState(false)
   const [tab, setTab] = useState<Tab>('raw')
   const [copied, setCopied] = useState(false)
@@ -52,9 +56,10 @@ export function EventDetail({ event, onClose }: EventDetailProps) {
   if (!mounted) return null
 
   return createPortal(
-    <div className="evs-inspect-backdrop" onMouseDown={onClose}>
-      <div
-        className="evs-inspect-modal"
+    <div className={`evs-portal evs-theme-${theme}`}>
+      <div className="evs-inspect-backdrop" onMouseDown={onClose}>
+        <div
+          className="evs-inspect-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="evs-inspect-title"
@@ -135,6 +140,7 @@ export function EventDetail({ event, onClose }: EventDetailProps) {
             <DiffTable lines={diff.lines} />
           </div>
         )}
+        </div>
       </div>
     </div>,
     document.body,
