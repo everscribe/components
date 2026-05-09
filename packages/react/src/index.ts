@@ -1,3 +1,3 @@
-export { EverscribeEvents } from './EverscribeEvents.js'
-export type { EverscribeEventsProps } from './EverscribeEvents.js'
+export { AuditTrail } from './AuditTrail.js'
+export type { AuditTrailProps } from './AuditTrail.js'
 export type { Event, EmbedClaims } from '@everscribe/components-core'

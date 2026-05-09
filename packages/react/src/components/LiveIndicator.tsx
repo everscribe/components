@@ -9,8 +9,8 @@ export interface LiveIndicatorProps {
 export function LiveIndicator({ active }: LiveIndicatorProps) {
   if (!active) return null
   return (
-    <span className="evs-live" aria-label="Live updates" title="Live updates">
-      <span className="evs-live-dot" aria-hidden="true" />
+    <span className="audit-trail-live" aria-label="Live updates" title="Live updates">
+      <span className="audit-trail-live-dot" aria-hidden="true" />
       <span>Live</span>
     </span>
   )

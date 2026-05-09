@@ -109,8 +109,8 @@ export function FiltersPanel({ value, onChange, distinct }: FiltersPanelProps) {
   const activeCount = countActiveColumnFilters(value)
 
   return (
-    <div className="evs-filter-panel">
-      <div className="evs-filter-tabs" role="tablist" aria-label="Time range">
+    <div className="audit-trail-filter-panel">
+      <div className="audit-trail-filter-tabs" role="tablist" aria-label="Time range">
         {TIME_PRESETS.map((p) => (
           <button
             key={p.key}
@@ -119,8 +119,8 @@ export function FiltersPanel({ value, onChange, distinct }: FiltersPanelProps) {
             aria-selected={value.range === p.key}
             className={
               value.range === p.key
-                ? 'evs-filter-tab evs-filter-tab-selected'
-                : 'evs-filter-tab'
+                ? 'audit-trail-filter-tab audit-trail-filter-tab-selected'
+                : 'audit-trail-filter-tab'
             }
             onClick={() => handlePresetClick(p.key)}
           >
@@ -130,21 +130,21 @@ export function FiltersPanel({ value, onChange, distinct }: FiltersPanelProps) {
       </div>
 
       {value.range === 'custom' && (
-        <div className="evs-filter-row">
-          <label className="evs-filter-field">
-            <span className="evs-filter-field-label">From</span>
+        <div className="audit-trail-filter-row">
+          <label className="audit-trail-filter-field">
+            <span className="audit-trail-filter-field-label">From</span>
             <input
               type="datetime-local"
-              className="evs-filter-input"
+              className="audit-trail-filter-input"
               value={draftSince}
               onChange={(e) => setDraftSince(e.target.value)}
             />
           </label>
-          <label className="evs-filter-field">
-            <span className="evs-filter-field-label">To</span>
+          <label className="audit-trail-filter-field">
+            <span className="audit-trail-filter-field-label">To</span>
             <input
               type="datetime-local"
-              className="evs-filter-input"
+              className="audit-trail-filter-input"
               value={draftBefore}
               onChange={(e) => setDraftBefore(e.target.value)}
             />
@@ -152,9 +152,9 @@ export function FiltersPanel({ value, onChange, distinct }: FiltersPanelProps) {
         </div>
       )}
 
-      <div className="evs-filter-row">
+      <div className="audit-trail-filter-row">
         <select
-          className="evs-filter-select"
+          className="audit-trail-filter-select"
           aria-label="Action"
           value={value.action ?? ''}
           onChange={(e) =>
@@ -170,7 +170,7 @@ export function FiltersPanel({ value, onChange, distinct }: FiltersPanelProps) {
         </select>
 
         <select
-          className="evs-filter-select"
+          className="audit-trail-filter-select"
           aria-label="Actor type"
           value={value.actorType ?? ''}
           onChange={(e) =>
@@ -186,7 +186,7 @@ export function FiltersPanel({ value, onChange, distinct }: FiltersPanelProps) {
         </select>
 
         <select
-          className="evs-filter-select"
+          className="audit-trail-filter-select"
           aria-label="Target type"
           value={value.targetType ?? ''}
           onChange={(e) =>
@@ -202,10 +202,10 @@ export function FiltersPanel({ value, onChange, distinct }: FiltersPanelProps) {
         </select>
       </div>
 
-      <div className="evs-filter-row">
+      <div className="audit-trail-filter-row">
         <input
           type="text"
-          className="evs-filter-input evs-filter-actor-input"
+          className="audit-trail-filter-input audit-trail-filter-actor-input"
           placeholder="Actor (id, name, email)"
           value={draftActor}
           onChange={(e) => setDraftActor(e.target.value)}
@@ -213,10 +213,10 @@ export function FiltersPanel({ value, onChange, distinct }: FiltersPanelProps) {
       </div>
 
       {activeCount > 0 && (
-        <div className="evs-filter-actions">
+        <div className="audit-trail-filter-actions">
           <button
             type="button"
-            className="evs-button evs-button-secondary"
+            className="audit-trail-button audit-trail-button-secondary"
             onClick={handleClear}
           >
             Clear

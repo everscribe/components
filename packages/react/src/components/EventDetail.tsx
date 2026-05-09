@@ -13,8 +13,8 @@ export interface EventDetailProps {
   event: Event
   onClose: () => void
   // theme propagates the parent's theme into the portal so the modal's
-  // CSS variables (--evs-bg, --evs-fg, --evs-overlay, …) still resolve
-  // — the portal target is document.body, which sits outside .evs-root.
+  // CSS variables (--audit-trail-bg, --audit-trail-fg, --audit-trail-overlay, …) still resolve
+  // — the portal target is document.body, which sits outside .audit-trail-root.
   theme?: 'light' | 'dark'
 }
 
@@ -59,28 +59,28 @@ export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProp
   if (!mounted) return null
 
   return createPortal(
-    <div className={`evs-portal evs-theme-${theme}`}>
-      <div className="evs-inspect-backdrop" onMouseDown={onClose}>
+    <div className={`audit-trail-portal audit-trail-theme-${theme}`}>
+      <div className="audit-trail-inspect-backdrop" onMouseDown={onClose}>
         <div
-          className="evs-inspect-modal"
+          className="audit-trail-inspect-modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="evs-inspect-title"
+        aria-labelledby="audit-trail-inspect-title"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <button
           type="button"
           ref={closeBtnRef}
-          className="evs-inspect-close"
+          className="audit-trail-inspect-close"
           aria-label="Close"
           onClick={onClose}
         >
           ×
         </button>
-        <h2 id="evs-inspect-title" className="evs-inspect-title">
+        <h2 id="audit-trail-inspect-title" className="audit-trail-inspect-title">
           Inspect Event
         </h2>
-        <p className="evs-inspect-subtitle">
+        <p className="audit-trail-inspect-subtitle">
           <code>{event.action || '—'}</code>
           {' · '}
           {formatHeaderTimestamp(event.occurred_at)}
@@ -89,15 +89,15 @@ export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProp
         </p>
 
         {showDiff && (
-          <div className="evs-inspect-tabs" role="tablist" aria-label="View">
+          <div className="audit-trail-inspect-tabs" role="tablist" aria-label="View">
             <button
               type="button"
               role="tab"
               aria-selected={tab === 'raw'}
               className={
                 tab === 'raw'
-                  ? 'evs-inspect-tab evs-inspect-tab-active'
-                  : 'evs-inspect-tab'
+                  ? 'audit-trail-inspect-tab audit-trail-inspect-tab-active'
+                  : 'audit-trail-inspect-tab'
               }
               onClick={() => setTab('raw')}
             >
@@ -109,8 +109,8 @@ export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProp
               aria-selected={tab === 'diff'}
               className={
                 tab === 'diff'
-                  ? 'evs-inspect-tab evs-inspect-tab-active'
-                  : 'evs-inspect-tab'
+                  ? 'audit-trail-inspect-tab audit-trail-inspect-tab-active'
+                  : 'audit-trail-inspect-tab'
               }
               onClick={() => setTab('diff')}
             >
@@ -120,14 +120,14 @@ export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProp
         )}
 
         {tab === 'raw' && (
-          <div className="evs-inspect-panel">
-            <div className="evs-code-block-wrap">
-              <pre className="evs-code-block">
+          <div className="audit-trail-inspect-panel">
+            <div className="audit-trail-code-block-wrap">
+              <pre className="audit-trail-code-block">
                 <code>{rawJson}</code>
               </pre>
               <button
                 type="button"
-                className="evs-copy-button"
+                className="audit-trail-copy-button"
                 onClick={handleCopy}
                 aria-label={copied ? 'Copied' : 'Copy to clipboard'}
                 title={copied ? 'Copied' : 'Copy to clipboard'}
@@ -139,7 +139,7 @@ export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProp
         )}
 
         {tab === 'diff' && showDiff && (
-          <div className="evs-inspect-panel">
+          <div className="audit-trail-inspect-panel">
             <DiffTable lines={diff.lines} />
           </div>
         )}
@@ -152,8 +152,8 @@ export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProp
 
 function DiffTable({ lines }: { lines: DiffLine[] }) {
   return (
-    <div className="evs-diff-wrap">
-      <table className="evs-diff-table">
+    <div className="audit-trail-diff-wrap">
+      <table className="audit-trail-diff-table">
         <thead>
           <tr>
             <th>Before</th>
@@ -164,14 +164,14 @@ function DiffTable({ lines }: { lines: DiffLine[] }) {
           {lines.map((line, idx) => (
             <tr key={idx}>
               <td
-                className={`evs-diff-cell evs-diff-before-${
+                className={`audit-trail-diff-cell audit-trail-diff-before-${
                   line.beforeKind || 'blank'
                 }`}
               >
                 <pre>{line.before}</pre>
               </td>
               <td
-                className={`evs-diff-cell evs-diff-after-${
+                className={`audit-trail-diff-cell audit-trail-diff-after-${
                   line.afterKind || 'blank'
                 }`}
               >

@@ -20,7 +20,7 @@ export function EventRow({ event, columns, onClick }: EventRowProps) {
   const interactive = Boolean(onClick)
   return (
     <tr
-      className="evs-row"
+      className="audit-trail-row"
       onClick={interactive ? () => onClick!(event) : undefined}
       tabIndex={interactive ? 0 : undefined}
       onKeyDown={
@@ -35,7 +35,7 @@ export function EventRow({ event, columns, onClick }: EventRowProps) {
       }
     >
       {columns.map((col) => (
-        <td key={col} className={`evs-cell evs-cell-${col}`}>
+        <td key={col} className={`audit-trail-cell audit-trail-cell-${col}`}>
           {renderCell(col, event)}
         </td>
       ))}
@@ -89,7 +89,7 @@ function renderResult(value: unknown): ReactNode {
   const status = typeof obj.status === 'string' ? obj.status : ''
   if (!status) return '—'
   return (
-    <span className={`evs-status evs-status-${cssToken(status)}`}>{status}</span>
+    <span className={`audit-trail-status audit-trail-status-${cssToken(status)}`}>{status}</span>
   )
 }
 
@@ -115,10 +115,10 @@ function renderPresence(value: unknown): ReactNode {
   if (typeof value === 'object') {
     const keys = Object.keys(value as object)
     if (keys.length === 0) return '—'
-    return <span className="evs-cell-presence">View</span>
+    return <span className="audit-trail-cell-presence">View</span>
   }
   if (typeof value === 'string' && value.length > 0) {
-    return <span className="evs-cell-presence">View</span>
+    return <span className="audit-trail-cell-presence">View</span>
   }
   return '—'
 }
@@ -135,7 +135,7 @@ function summarizeObject(value: object): string {
 }
 
 // cssToken sanitizes a status string ("ok", "ERROR", "needs review")
-// into a token safe to slot into an evs-status-{token} class name.
+// into a token safe to slot into an audit-trail-status-{token} class name.
 function cssToken(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9_-]+/g, '-')
 }

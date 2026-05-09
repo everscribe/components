@@ -8,15 +8,15 @@ export function FiltersToggle({ open, onOpenChange, activeCount }: FiltersToggle
   return (
     <button
       type="button"
-      className="evs-filter-toggle"
+      className="audit-trail-filter-toggle"
       aria-expanded={open}
       onClick={() => onOpenChange(!open)}
     >
       Set filters
       {activeCount > 0 && (
-        <span className="evs-filter-toggle-badge">{activeCount}</span>
+        <span className="audit-trail-filter-toggle-badge">{activeCount}</span>
       )}
-      <span className="evs-filter-toggle-caret" aria-hidden="true">
+      <span className="audit-trail-filter-toggle-caret" aria-hidden="true">
         {open ? '▴' : '▾'}
       </span>
     </button>

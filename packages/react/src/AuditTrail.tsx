@@ -36,7 +36,7 @@ const DEFAULT_VISIBLE_COLUMNS = [
 
 export type DefaultTimeRange = '24h' | '7d' | '30d' | 'all'
 
-export interface EverscribeEventsProps {
+export interface AuditTrailProps {
   /**
    * Embed JWT. If omitted, the component fetches an initial token via
    * `tokenEndpoint` or `onTokenExpired` on mount.
@@ -74,7 +74,7 @@ type BootstrapState =
   | { phase: 'ready'; token: string }
   | { phase: 'error'; reason: 'config' | 'fetch' }
 
-export function EverscribeEvents(props: EverscribeEventsProps) {
+export function AuditTrail(props: AuditTrailProps) {
   const [bootstrap, setBootstrap] = useState<BootstrapState>(() =>
     props.token ? { phase: 'ready', token: props.token } : { phase: 'idle' },
   )
@@ -233,8 +233,8 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
   )
 
   const rootClassName = [
-    'evs-root',
-    `evs-theme-${props.theme ?? 'light'}`,
+    'audit-trail-root',
+    `audit-trail-theme-${props.theme ?? 'light'}`,
     props.className,
   ]
     .filter(Boolean)
@@ -243,7 +243,7 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
   if (bootstrap.phase === 'error' && bootstrap.reason === 'config') {
     return (
       <div className={rootClassName} style={props.style}>
-        <div className="evs-state evs-state-error">
+        <div className="audit-trail-state audit-trail-state-error">
           Configure <code>token</code>, <code>tokenEndpoint</code>, or{' '}
           <code>onTokenExpired</code>.
         </div>
@@ -254,11 +254,11 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
   if (bootstrap.phase === 'error' && bootstrap.reason === 'fetch') {
     return (
       <div className={rootClassName} style={props.style}>
-        <div className="evs-state evs-state-error">
+        <div className="audit-trail-state audit-trail-state-error">
           <span>Couldn’t fetch token.</span>
           <button
             type="button"
-            className="evs-button"
+            className="audit-trail-button"
             onClick={() => setRetryCount((c) => c + 1)}
           >
             Retry
@@ -271,7 +271,7 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
   if (bootstrap.phase !== 'ready') {
     return (
       <div className={rootClassName} style={props.style}>
-        <div className="evs-state evs-state-loading">Loading…</div>
+        <div className="audit-trail-state audit-trail-state-loading">Loading…</div>
       </div>
     )
   }
@@ -279,16 +279,16 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
   if (claims === null) {
     return (
       <div className={rootClassName} style={props.style}>
-        <div className="evs-state evs-state-error">Invalid token.</div>
+        <div className="audit-trail-state audit-trail-state-error">Invalid token.</div>
       </div>
     )
   }
 
   return (
     <div className={rootClassName} style={props.style}>
-      <div className="evs-toolbar">
+      <div className="audit-trail-toolbar">
         <LiveIndicator active={livePollActive} />
-        <span className="evs-toolbar-spacer" />
+        <span className="audit-trail-toolbar-spacer" />
         <FiltersToggle
           open={filtersOpen}
           onOpenChange={setFiltersOpen}
@@ -296,7 +296,7 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
         />
         <button
           type="button"
-          className="evs-button"
+          className="audit-trail-button"
           onClick={() => setExportOpen(true)}
         >
           Export
@@ -312,24 +312,24 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
       )}
 
       {status === 'loading' && events.length === 0 && (
-        <div className="evs-state evs-state-loading">Loading…</div>
+        <div className="audit-trail-state audit-trail-state-loading">Loading…</div>
       )}
       {status === 'expired' && (
-        <div className="evs-state evs-state-error">Session expired.</div>
+        <div className="audit-trail-state audit-trail-state-error">Session expired.</div>
       )}
       {status === 'error' && error && (
-        <div className="evs-state evs-state-error">
+        <div className="audit-trail-state audit-trail-state-error">
           <span>{errorMessage(error)}</span>
-          <button type="button" className="evs-button" onClick={refresh}>
+          <button type="button" className="audit-trail-button" onClick={refresh}>
             Retry
           </button>
         </div>
       )}
       {status === 'ok' && events.length === 0 && (
-        <div className="evs-state evs-state-empty">No events match.</div>
+        <div className="audit-trail-state audit-trail-state-empty">No events match.</div>
       )}
       {events.length > 0 && visibleColumns.length === 0 && (
-        <div className="evs-state evs-state-empty">No columns selected.</div>
+        <div className="audit-trail-state audit-trail-state-empty">No columns selected.</div>
       )}
       {events.length > 0 && visibleColumns.length > 0 && (
         <>
@@ -339,7 +339,7 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
             onRowClick={setSelected}
           />
           {hasMore && (
-            <button type="button" className="evs-button evs-load-more" onClick={loadMore}>
+            <button type="button" className="audit-trail-button audit-trail-load-more" onClick={loadMore}>
               Load more
             </button>
           )}

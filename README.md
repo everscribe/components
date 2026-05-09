@@ -1,15 +1,15 @@
-# @everscribe/events-react
+# @everscribe/components-react
 
 Embeddable React component for [Everscribe](https://everscribe.io) audit events.
 
-Drop `<EverscribeEvents />` into your customer-facing app, hand it a short-lived embed token, and your end-users see a live, scoped view of their audit trail. The token's claims define what they can see — tenant, columns, actions — and the server enforces that scope on every read.
+Drop `<AuditTrail />` into your customer-facing app, hand it a short-lived embed token, and your end-users see a live, scoped view of their audit trail. The token's claims define what they can see — tenant, columns, actions — and the server enforces that scope on every read.
 
 Zero runtime dependencies beyond `react` and `react-dom`.
 
 ## Install
 
 ```bash
-npm install @everscribe/events-react
+npm install @everscribe/components-react
 ```
 
 Peer dependencies: `react >=18`, `react-dom >=18`.
@@ -17,11 +17,11 @@ Peer dependencies: `react >=18`, `react-dom >=18`.
 ## Quick start
 
 ```tsx
-import { EverscribeEvents } from '@everscribe/events-react'
-import '@everscribe/events-react/styles.css'
+import { AuditTrail } from '@everscribe/components-react'
+import '@everscribe/components-styles/default.css'
 
 export function AuditPage() {
-  return <EverscribeEvents tokenEndpoint="https://yourbackend.com/api/embed-token" />
+  return <AuditTrail tokenEndpoint="https://yourbackend.com/api/embed-token" />
 }
 ```
 
@@ -33,8 +33,8 @@ If you'd rather control the initial fetch yourself — explicit loading states, 
 
 ```tsx
 import { useEffect, useState } from 'react'
-import { EverscribeEvents } from '@everscribe/events-react'
-import '@everscribe/events-react/styles.css'
+import { AuditTrail } from '@everscribe/components-react'
+import '@everscribe/components-styles/default.css'
 
 export function AuditPage() {
   const [token, setToken] = useState<string | null>(null)
@@ -46,7 +46,7 @@ export function AuditPage() {
   }, [])
 
   if (!token) return <div>Loading…</div>
-  return <EverscribeEvents token={token} tokenEndpoint="https://yourbackend.com/api/embed-token" />
+  return <AuditTrail token={token} tokenEndpoint="https://yourbackend.com/api/embed-token" />
 }
 ```
 
@@ -118,7 +118,7 @@ See the [sdk-go README](https://github.com/everscribe/sdk-go#embedded-views) for
 ```
 
 1. **Your backend** holds the project API key (`evs_<32hex>`). Use `sdk-go/pkg/minter` to mint short-lived embed tokens.
-2. **Your frontend** fetches a token from a route you expose, then passes it to `<EverscribeEvents />`.
+2. **Your frontend** fetches a token from a route you expose, then passes it to `<AuditTrail />`.
 3. **The Everscribe API** verifies the token on every read and scopes results to its claims.
 
 The API key never touches the browser. Tokens do, and they're designed for it: short TTL, narrow scope, read-only.
@@ -155,45 +155,45 @@ If your token endpoint uses the same session-cookie auth as the rest of your app
 Brand-match by overriding CSS variables. The simplest path:
 
 ```css
-.my-app .evs-root {
-  --evs-accent: #ff6b35;
-  --evs-radius: 10px;
-  --evs-font-family: 'Inter', sans-serif;
+.my-app .audit-trail-root {
+  --audit-trail-accent: #ff6b35;
+  --audit-trail-radius: 10px;
+  --audit-trail-font-family: 'Inter', sans-serif;
 }
 ```
 
-Tokens exposed (all on `.evs-root`):
+Tokens exposed (all on `.audit-trail-root`):
 
 | Token | Default (light) |
 |---|---|
-| `--evs-bg` | `#ffffff` |
-| `--evs-fg` | `#1f2328` |
-| `--evs-fg-muted` | `#656d76` |
-| `--evs-border` | `#d0d7de` |
-| `--evs-border-strong` | `#afb8c1` |
-| `--evs-surface` | `#f6f8fa` |
-| `--evs-surface-hover` | `#eaeef2` |
-| `--evs-accent` | `#0969da` |
-| `--evs-accent-fg` | `#ffffff` |
-| `--evs-danger` | `#cf222e` |
-| `--evs-overlay` | `rgba(0, 0, 0, 0.5)` |
-| `--evs-font-family` | system sans stack |
-| `--evs-font-mono` | system mono stack |
-| `--evs-font-size` | `14px` |
-| `--evs-font-size-sm` | `12px` |
-| `--evs-line-height` | `1.5` |
-| `--evs-spacing-xs` | `4px` |
-| `--evs-spacing-sm` | `8px` |
-| `--evs-spacing` | `12px` |
-| `--evs-spacing-lg` | `16px` |
-| `--evs-spacing-xl` | `24px` |
-| `--evs-radius-sm` | `4px` |
-| `--evs-radius` | `6px` |
-| `--evs-shadow` | `0 8px 24px rgba(0, 0, 0, 0.12)` |
+| `--audit-trail-bg` | `#ffffff` |
+| `--audit-trail-fg` | `#1f2328` |
+| `--audit-trail-fg-muted` | `#656d76` |
+| `--audit-trail-border` | `#d0d7de` |
+| `--audit-trail-border-strong` | `#afb8c1` |
+| `--audit-trail-surface` | `#f6f8fa` |
+| `--audit-trail-surface-hover` | `#eaeef2` |
+| `--audit-trail-accent` | `#0969da` |
+| `--audit-trail-accent-fg` | `#ffffff` |
+| `--audit-trail-danger` | `#cf222e` |
+| `--audit-trail-overlay` | `rgba(0, 0, 0, 0.5)` |
+| `--audit-trail-font-family` | system sans stack |
+| `--audit-trail-font-mono` | system mono stack |
+| `--audit-trail-font-size` | `14px` |
+| `--audit-trail-font-size-sm` | `12px` |
+| `--audit-trail-line-height` | `1.5` |
+| `--audit-trail-spacing-xs` | `4px` |
+| `--audit-trail-spacing-sm` | `8px` |
+| `--audit-trail-spacing` | `12px` |
+| `--audit-trail-spacing-lg` | `16px` |
+| `--audit-trail-spacing-xl` | `24px` |
+| `--audit-trail-radius-sm` | `4px` |
+| `--audit-trail-radius` | `6px` |
+| `--audit-trail-shadow` | `0 8px 24px rgba(0, 0, 0, 0.12)` |
 
-`.evs-theme-dark` swaps the color tokens to a dark palette.
+`.audit-trail-theme-dark` swaps the color tokens to a dark palette.
 
-When variables aren't enough, override class names directly: `.evs-table`, `.evs-th`, `.evs-row`, `.evs-cell`, `.evs-cell-{column}`, `.evs-detail-panel`, `.evs-detail-row-{column}`, etc.
+When variables aren't enough, override class names directly: `.audit-trail-table`, `.audit-trail-th`, `.audit-trail-row`, `.audit-trail-cell`, `.audit-trail-cell-{column}`, `.audit-trail-detail-panel`, `.audit-trail-detail-row-{column}`, etc.
 
 ## Token storage
 

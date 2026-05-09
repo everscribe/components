@@ -10,13 +10,13 @@ export function ColumnPicker({ available, visible, onToggle }: ColumnPickerProps
   const visibleCount = available.reduce((n, c) => (visible.has(c) ? n + 1 : n), 0)
 
   return (
-    <details className="evs-picker">
-      <summary className="evs-picker-summary">
+    <details className="audit-trail-picker">
+      <summary className="audit-trail-picker-summary">
         Columns ({visibleCount}/{available.length})
       </summary>
-      <div className="evs-picker-content">
+      <div className="audit-trail-picker-content">
         {available.map((col) => (
-          <label key={col} className="evs-picker-item">
+          <label key={col} className="audit-trail-picker-item">
             <input
               type="checkbox"
               checked={visible.has(col)}

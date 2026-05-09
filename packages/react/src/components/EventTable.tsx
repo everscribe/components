@@ -9,11 +9,11 @@ export interface EventTableProps {
 
 export function EventTable({ events, visibleColumns, onRowClick }: EventTableProps) {
   return (
-    <table className="evs-table">
+    <table className="audit-trail-table">
       <thead>
         <tr>
           {visibleColumns.map((col) => (
-            <th key={col} scope="col" className={`evs-th evs-th-${col}`}>
+            <th key={col} scope="col" className={`audit-trail-th audit-trail-th-${col}`}>
               {COLUMN_LABELS[col] ?? col}
             </th>
           ))}

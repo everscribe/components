@@ -57,25 +57,25 @@ export function ExportModal({ open, onClose, onDownload }: ExportModalProps) {
 
   return (
     <div
-      className="evs-export-backdrop"
+      className="audit-trail-export-backdrop"
       role="presentation"
       onClick={onBackdropClick}
     >
       <div
-        className="evs-export-modal"
+        className="audit-trail-export-modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="evs-export-title"
+        aria-labelledby="audit-trail-export-title"
       >
-        <h2 id="evs-export-title" className="evs-export-title">
+        <h2 id="audit-trail-export-title" className="audit-trail-export-title">
           Export events
         </h2>
-        <p className="evs-export-blurb">
+        <p className="audit-trail-export-blurb">
           The current filters and time range are applied. Capped at 100,000 rows
           — narrow the filters or time window if you hit it.
         </p>
 
-        <div className="evs-export-options">
+        <div className="audit-trail-export-options">
           <FormatCard
             format="csv"
             selected={format === 'csv'}
@@ -93,15 +93,15 @@ export function ExportModal({ open, onClose, onDownload }: ExportModalProps) {
         </div>
 
         {status === 'error' && errMsg && (
-          <div className="evs-export-error" role="alert">
+          <div className="audit-trail-export-error" role="alert">
             {errMsg}
           </div>
         )}
 
-        <div className="evs-export-actions">
+        <div className="audit-trail-export-actions">
           <button
             type="button"
-            className="evs-button"
+            className="audit-trail-button"
             onClick={handleDownload}
             disabled={!format || status === 'downloading'}
           >
@@ -109,7 +109,7 @@ export function ExportModal({ open, onClose, onDownload }: ExportModalProps) {
           </button>
           <button
             type="button"
-            className="evs-button evs-button-secondary"
+            className="audit-trail-button audit-trail-button-secondary"
             onClick={onClose}
             disabled={status === 'downloading'}
           >
@@ -137,14 +137,14 @@ function FormatCard({ format, selected, onSelect, title, body }: FormatCardProps
       aria-checked={selected}
       className={
         selected
-          ? 'evs-export-card evs-export-card-selected'
-          : 'evs-export-card'
+          ? 'audit-trail-export-card audit-trail-export-card-selected'
+          : 'audit-trail-export-card'
       }
       onClick={onSelect}
       data-format={format}
     >
-      <span className="evs-export-card-title">{title}</span>
-      <span className="evs-export-card-body">{body}</span>
+      <span className="audit-trail-export-card-title">{title}</span>
+      <span className="audit-trail-export-card-body">{body}</span>
     </button>
   )
 }
