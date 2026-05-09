@@ -238,25 +238,28 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: 9px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: 7px;
   background: var(--evs-accent);
   color: #fff;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
+  line-height: 1;
 }
 
 .evs-filter-toggle-caret {
   color: var(--evs-fg-muted);
-  font-size: 10px;
+  font-size: 13px;
+  line-height: 1;
 }
 
 .evs-filter-panel {
   display: flex;
   flex-direction: column;
   gap: var(--evs-spacing-sm);
+  margin-bottom: var(--evs-spacing);
   padding: var(--evs-spacing);
   border: 1px solid var(--evs-border);
   border-radius: var(--evs-radius);
