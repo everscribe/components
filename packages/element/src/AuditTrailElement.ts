@@ -1,5 +1,6 @@
 import {
   ALL_COLUMNS,
+  COLUMN_LABELS,
   createDistinctValuesStore,
   createEventsStore,
   fetchTokenViaOpts,
@@ -12,11 +13,30 @@ import {
 } from '@everscribe/components-core'
 
 import { h } from './dom.js'
+import {
+  countActiveColumnFilters,
+  renderFiltersPanel,
+  resolveTimeBounds,
+  type FilterValues,
+  type TimeRangePreset,
+} from './filters.js'
 import { renderTable } from './table.js'
 
 const DEFAULT_API_BASE = 'https://api.everscribe.io/v1/embed'
 const DEFAULT_PAGE_SIZE = 25
 const DEFAULT_POLL_INTERVAL_MS = 5000
+const DEFAULT_VISIBLE_COLUMNS = [
+  'occurred_at',
+  'action',
+  'actor',
+  'target',
+  'tenant_id',
+  'result',
+]
+// Debounce window for the free-text actor input and the custom-range
+// datetime inputs. Long enough to absorb continuous typing, short
+// enough to feel responsive.
+const TEXT_DEBOUNCE_MS = 300
 
 export type Theme = 'light' | 'dark'
 export type DefaultTimeRange = '24h' | '7d' | '30d' | 'all'
@@ -55,11 +75,34 @@ export class AuditTrailElement extends HTMLElement {
   private distinctUnsub: (() => void) | null = null
   // Latest snapshots cached so render() doesn't have to peek into stores.
   private eventsState: EventsStoreState | null = null
-  private distinctValues: DistinctValues | null = null
+  private distinctValues: DistinctValues = {
+    actions: [],
+    actorTypes: [],
+    targetTypes: [],
+  }
+
+  // UI state.
+  private filters: FilterValues = { range: 'all' }
+  private filtersOpen = false
+  private visibleSet: Set<string> = new Set(DEFAULT_VISIBLE_COLUMNS)
+
+  // Slot tracking for partial re-renders. bodySlot wraps the table /
+  // state messages so events-store subscriptions can update only the
+  // table region without touching the toolbar (which would clobber
+  // open <details> picker state) or filter inputs (focus + drafts).
+  private bodySlot: HTMLElement | null = null
+
+  // Held across re-renders so the debounced commit can read the
+  // current input values at fire time.
+  private actorInput: HTMLInputElement | null = null
+  private sinceInput: HTMLInputElement | null = null
+  private beforeInput: HTMLInputElement | null = null
+  private debounceTimer: ReturnType<typeof setTimeout> | null = null
 
   connectedCallback() {
     this.classList.add('audit-trail-root')
     this.classList.add(`audit-trail-theme-${this.themeAttr()}`)
+    this.filters = { range: this.defaultTimeRangeAttr() }
     this.start()
   }
 
@@ -84,10 +127,15 @@ export class AuditTrailElement extends HTMLElement {
       return
     }
 
-    // page-size / poll-interval / api-base / default-time-range:
-    // rebuild stores against the new config without re-bootstrapping the
-    // token. Only needed once we're past the token bootstrap.
-    if (this.bootstrap.phase === 'ready') this.startStores(this.bootstrap.token)
+    if (name === 'default-time-range') {
+      // Only meaningful as an *initial* preference. After mount, the
+      // user-facing time-range tabs own this value.
+      return
+    }
+
+    // page-size / poll-interval / api-base: rebuild events store with
+    // the new config without re-bootstrapping the token.
+    if (this.bootstrap.phase === 'ready') this.restartEventsStore()
   }
 
   // Public method, mirrors the React component's refresh hatch. Triggers
@@ -113,6 +161,11 @@ export class AuditTrailElement extends HTMLElement {
     if (v === null) return DEFAULT_POLL_INTERVAL_MS
     const n = Number.parseInt(v, 10)
     return Number.isFinite(n) ? n : DEFAULT_POLL_INTERVAL_MS
+  }
+  private defaultTimeRangeAttr(): TimeRangePreset {
+    const v = this.getAttribute('default-time-range')
+    if (v === '24h' || v === '7d' || v === '30d' || v === 'all') return v
+    return 'all'
   }
 
   // ---- bootstrap ----
@@ -155,13 +208,23 @@ export class AuditTrailElement extends HTMLElement {
   private setReady(token: string) {
     const claims = parseClaims(token)
     this.bootstrap = { phase: 'ready', token, claims }
-    this.startStores(token)
+    // Initial visibleSet honors the token's column scope when set;
+    // otherwise the React-aligned default visible set.
+    if (claims?.columns && claims.columns.length > 0) {
+      this.visibleSet = new Set(claims.columns)
+    } else {
+      this.visibleSet = new Set(DEFAULT_VISIBLE_COLUMNS)
+    }
+    this.startEventsStore(token)
+    this.startDistinctStore(token)
     this.render()
   }
 
-  private startStores(token: string) {
-    this.cleanupStores()
+  private startEventsStore(token: string) {
+    this.eventsUnsub?.()
+    this.eventsStore?.dispose()
 
+    const { since, before } = resolveTimeBounds(this.filters)
     const apiBase = this.apiBaseAttr()
     const tokenEndpoint = this.getAttribute('token-endpoint') ?? undefined
 
@@ -173,13 +236,27 @@ export class AuditTrailElement extends HTMLElement {
       tokenEndpoint,
       onTokenExpired: this.onTokenExpired,
       onError: (err) => this.dispatchError(err),
+      since,
+      before,
+      action: this.filters.action,
+      actor: this.filters.actor,
+      actorType: this.filters.actorType,
+      targetType: this.filters.targetType,
     })
     this.eventsStore = events
     this.eventsState = events.getSnapshot()
     this.eventsUnsub = events.subscribe(() => {
       this.eventsState = events.getSnapshot()
-      this.render()
+      this.renderBody()
     })
+  }
+
+  private startDistinctStore(token: string) {
+    this.distinctUnsub?.()
+    this.distinctStore?.dispose()
+
+    const apiBase = this.apiBaseAttr()
+    const tokenEndpoint = this.getAttribute('token-endpoint') ?? undefined
 
     const distinct = createDistinctValuesStore({
       apiBase,
@@ -191,8 +268,16 @@ export class AuditTrailElement extends HTMLElement {
     this.distinctValues = distinct.getSnapshot()
     this.distinctUnsub = distinct.subscribe(() => {
       this.distinctValues = distinct.getSnapshot()
+      // Filter panel dropdowns depend on distinct values; re-render
+      // the whole element to refresh them. Distinct fetches once per
+      // token, so this happens at most once after bootstrap.
       this.render()
     })
+  }
+
+  private restartEventsStore() {
+    if (this.bootstrap.phase !== 'ready') return
+    this.startEventsStore(this.bootstrap.token)
   }
 
   private cleanupStores() {
@@ -205,12 +290,16 @@ export class AuditTrailElement extends HTMLElement {
     this.eventsStore = null
     this.distinctStore = null
     this.eventsState = null
-    this.distinctValues = null
+    this.distinctValues = { actions: [], actorTypes: [], targetTypes: [] }
   }
 
   private cleanup() {
     this.bootstrapAbort?.abort()
     this.bootstrapAbort = null
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer)
+      this.debounceTimer = null
+    }
     this.cleanupStores()
   }
 
@@ -225,9 +314,6 @@ export class AuditTrailElement extends HTMLElement {
 
   // ---- columns ----
 
-  // Available columns are driven by the token's `columns` claim when set;
-  // otherwise the picker-visible default. Mirrors the React component so
-  // both adapters honor the same scope.
   private get availableColumns(): string[] {
     if (this.bootstrap.phase !== 'ready') return ALL_COLUMNS
     const cols = this.bootstrap.claims?.columns
@@ -235,16 +321,82 @@ export class AuditTrailElement extends HTMLElement {
     return ALL_COLUMNS
   }
 
-  // Phase B: visibleColumns == availableColumns. Phase C introduces the
-  // column picker and a stored visibleSet.
   private get visibleColumns(): string[] {
-    return this.availableColumns
+    return this.availableColumns.filter((c) => this.visibleSet.has(c))
+  }
+
+  private toggleColumn(col: string) {
+    if (this.visibleSet.has(col)) this.visibleSet.delete(col)
+    else this.visibleSet.add(col)
+    this.render()
+  }
+
+  // ---- filters ----
+
+  private setFilters(next: FilterValues) {
+    this.filters = next
+    this.render()
+    this.restartEventsStore()
+  }
+
+  private scheduleDebouncedCommit() {
+    if (this.debounceTimer) clearTimeout(this.debounceTimer)
+    this.debounceTimer = setTimeout(() => {
+      this.debounceTimer = null
+      this.commitDebouncedDrafts()
+    }, TEXT_DEBOUNCE_MS)
+  }
+
+  // commitDebouncedDrafts reads the actor + custom-range inputs
+  // straight from the DOM and re-runs the events store with the new
+  // values. We deliberately skip the full render here — the inputs
+  // already show the user's typed value, and re-rendering would
+  // pull focus mid-type.
+  private commitDebouncedDrafts() {
+    const actorRaw = this.actorInput?.value ?? ''
+    const sinceRaw = this.sinceInput?.value ?? ''
+    const beforeRaw = this.beforeInput?.value ?? ''
+
+    const next: FilterValues = { ...this.filters }
+    let changed = false
+
+    const newActor = actorRaw || undefined
+    if (newActor !== this.filters.actor) {
+      next.actor = newActor
+      changed = true
+    }
+    if (this.filters.range === 'custom') {
+      const newSince = sinceRaw || undefined
+      const newBefore = beforeRaw || undefined
+      if (newSince !== this.filters.since) {
+        next.since = newSince
+        changed = true
+      }
+      if (newBefore !== this.filters.before) {
+        next.before = newBefore
+        changed = true
+      }
+    }
+    if (!changed) return
+    this.filters = next
+    this.restartEventsStore()
   }
 
   // ---- rendering ----
 
   private render() {
+    // Full rebuild. Slot refs are cleared so renderBody is a no-op
+    // until the next render assigns them.
+    this.bodySlot = null
+    this.actorInput = null
+    this.sinceInput = null
+    this.beforeInput = null
     this.replaceChildren(...this.renderChildren())
+  }
+
+  private renderBody() {
+    if (!this.bodySlot) return
+    this.bodySlot.replaceChildren(...this.renderBodyChildren())
   }
 
   private renderChildren(): Node[] {
@@ -278,6 +430,134 @@ export class AuditTrailElement extends HTMLElement {
       return [this.stateElement('error', 'Invalid token.')]
     }
 
+    const out: Node[] = [this.renderToolbar()]
+    if (this.filtersOpen) {
+      out.push(
+        renderFiltersPanel({
+          value: this.filters,
+          distinct: this.distinctValues,
+          onChange: (next) => this.setFilters(next),
+          onActorInput: () => this.scheduleDebouncedCommit(),
+          onCustomRangeInput: () => this.scheduleDebouncedCommit(),
+          setActorInput: (el) => {
+            this.actorInput = el
+          },
+          setSinceInput: (el) => {
+            this.sinceInput = el
+          },
+          setBeforeInput: (el) => {
+            this.beforeInput = el
+          },
+        }),
+      )
+    }
+    const body = h('div', { class: 'audit-trail-body' })
+    body.replaceChildren(...this.renderBodyChildren())
+    this.bodySlot = body
+    out.push(body)
+    return out
+  }
+
+  private renderToolbar(): HTMLElement {
+    const livePollActive =
+      this.pollIntervalAttr() > 0 && !resolveTimeBounds(this.filters).before
+
+    const live = livePollActive ? this.renderLiveIndicator() : null
+    const spacer = h('span', { class: 'audit-trail-toolbar-spacer' })
+    const filtersToggle = this.renderFiltersToggle()
+    // Phase D will mount the export modal. Phase C: stub button is
+    // visible but inert.
+    const exportBtn = h(
+      'button',
+      { type: 'button', class: 'audit-trail-button' },
+      'Export',
+    ) as HTMLButtonElement
+    exportBtn.disabled = true
+    exportBtn.title = 'Export — coming soon'
+    const picker = this.renderColumnPicker()
+
+    const children: Node[] = []
+    if (live) children.push(live)
+    children.push(spacer, filtersToggle, exportBtn, picker)
+    return h('div', { class: 'audit-trail-toolbar' }, ...children)
+  }
+
+  private renderLiveIndicator(): HTMLElement {
+    return h(
+      'span',
+      {
+        class: 'audit-trail-live',
+        'aria-label': 'Live updates',
+        title: 'Live updates',
+      },
+      h('span', { class: 'audit-trail-live-dot', 'aria-hidden': 'true' }),
+      h('span', null, 'Live'),
+    )
+  }
+
+  private renderFiltersToggle(): HTMLElement {
+    const activeCount = countActiveColumnFilters(this.filters)
+    const children: Node[] = [document.createTextNode('Set filters')]
+    if (activeCount > 0) {
+      children.push(
+        h('span', { class: 'audit-trail-filter-toggle-badge' }, String(activeCount)),
+      )
+    }
+    children.push(
+      h(
+        'span',
+        { class: 'audit-trail-filter-toggle-caret', 'aria-hidden': 'true' },
+        this.filtersOpen ? '▴' : '▾',
+      ),
+    )
+    const btn = h(
+      'button',
+      {
+        type: 'button',
+        class: 'audit-trail-filter-toggle',
+        'aria-expanded': this.filtersOpen ? 'true' : 'false',
+      },
+      ...children,
+    )
+    btn.addEventListener('click', () => {
+      this.filtersOpen = !this.filtersOpen
+      this.render()
+    })
+    return btn
+  }
+
+  private renderColumnPicker(): HTMLElement {
+    const available = this.availableColumns
+    const visibleCount = available.reduce(
+      (n, c) => (this.visibleSet.has(c) ? n + 1 : n),
+      0,
+    )
+
+    const items = available.map((col) => {
+      const checkbox = h('input', { type: 'checkbox' }) as HTMLInputElement
+      checkbox.checked = this.visibleSet.has(col)
+      checkbox.addEventListener('change', () => this.toggleColumn(col))
+      return h(
+        'label',
+        { class: 'audit-trail-picker-item' },
+        checkbox,
+        h('span', null, COLUMN_LABELS[col] ?? col),
+      )
+    })
+
+    return h(
+      'details',
+      { class: 'audit-trail-picker' },
+      h(
+        'summary',
+        { class: 'audit-trail-picker-summary' },
+        `Columns (${visibleCount}/${available.length})`,
+      ),
+      h('div', { class: 'audit-trail-picker-content' }, ...items),
+    )
+  }
+
+  private renderBodyChildren(): Node[] {
     const events = this.eventsState?.events ?? []
     const status = this.eventsState?.status ?? 'loading'
     const hasMore = (this.eventsState?.nextCursor ?? null) !== null
