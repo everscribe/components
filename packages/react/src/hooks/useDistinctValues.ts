@@ -1,19 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import {
-  EmbedError,
-  fetchTokenViaOpts,
-  listDistinctActions,
-  listDistinctActorTypes,
-  listDistinctTargetTypes,
+  createDistinctValuesStore,
+  EMPTY_DISTINCT_VALUES,
+  type DistinctValues,
+  type DistinctValuesStore,
 } from '@everscribe/components-core'
 
-export interface DistinctValues {
-  actions: string[]
-  actorTypes: string[]
-  targetTypes: string[]
-}
+export type { DistinctValues } from '@everscribe/components-core'
 
 export interface UseDistinctValuesOptions {
   apiBase: string
@@ -22,62 +17,35 @@ export interface UseDistinctValuesOptions {
   onTokenExpired?: () => Promise<string>
 }
 
+const NOOP_UNSUB = () => {}
+
 // useDistinctValues fetches the three filter-dropdown source lists once
 // per token. Failures are swallowed silently — an empty dropdown is
 // strictly better UX than blocking the table render on a 500.
 export function useDistinctValues(opts: UseDistinctValuesOptions): DistinctValues {
-  const [values, setValues] = useState<DistinctValues>({
-    actions: [],
-    actorTypes: [],
-    targetTypes: [],
-  })
+  const [store, setStore] = useState<DistinctValuesStore | null>(null)
 
   useEffect(() => {
     if (!opts.token) {
-      setValues({ actions: [], actorTypes: [], targetTypes: [] })
+      setStore(null)
       return
     }
-    const ctrl = new AbortController()
-    let cancelled = false
-
-    const fetchOnce = async (token: string) => {
-      const base = { apiBase: opts.apiBase, token, signal: ctrl.signal }
-      const [actions, actorTypes, targetTypes] = await Promise.all([
-        listDistinctActions(base).catch(() => ({ actions: [] })),
-        listDistinctActorTypes(base).catch(() => ({ actor_types: [] })),
-        listDistinctTargetTypes(base).catch(() => ({ target_types: [] })),
-      ])
-      if (cancelled) return
-      setValues({
-        actions: actions.actions,
-        actorTypes: actorTypes.actor_types,
-        targetTypes: targetTypes.target_types,
-      })
-    }
-
-    void (async () => {
-      try {
-        await fetchOnce(opts.token!)
-      } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') return
-        if (err instanceof EmbedError && err.kind === 'unauthorized') {
-          const refreshed = await fetchTokenViaOpts(opts)
-          if (refreshed && !cancelled) {
-            try {
-              await fetchOnce(refreshed)
-            } catch {
-              // Distinct dropdowns are non-critical; swallow.
-            }
-          }
-        }
-      }
-    })()
-
+    const s = createDistinctValuesStore({
+      apiBase: opts.apiBase,
+      token: opts.token,
+      tokenEndpoint: opts.tokenEndpoint,
+      onTokenExpired: opts.onTokenExpired,
+    })
+    setStore(s)
     return () => {
-      cancelled = true
-      ctrl.abort()
+      s.dispose()
     }
   }, [opts.token, opts.apiBase])
 
-  return values
+  const subscribe = useMemo(
+    () => (listener: () => void) => store?.subscribe(listener) ?? NOOP_UNSUB,
+    [store],
+  )
+  const getSnapshot = () => store?.getSnapshot() ?? EMPTY_DISTINCT_VALUES
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 }
