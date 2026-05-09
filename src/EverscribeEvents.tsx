@@ -27,6 +27,7 @@ const DEFAULT_VISIBLE_COLUMNS = [
   'actor',
   'target',
   'tenant_id',
+  'result',
 ]
 
 export type DefaultTimeRange = '24h' | '7d' | '30d' | 'all'
