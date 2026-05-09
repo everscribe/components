@@ -84,6 +84,40 @@
   flex-wrap: wrap;
 }
 
+.evs-toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+/* ---- Live indicator ---- */
+.evs-live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--evs-spacing-xs);
+  font-size: var(--evs-font-size-sm);
+  color: var(--evs-fg-muted);
+}
+
+.evs-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+  animation: evs-live-pulse 2s ease-out infinite;
+}
+
+@keyframes evs-live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
 /* ---- Column picker (<details>) ---- */
 .evs-picker {
   position: relative;
@@ -162,19 +196,10 @@
 }
 
 /* ---- Filters panel ---- */
-.evs-filters {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--evs-spacing-sm);
-  min-width: 0;
-}
-
 .evs-filter-toggle {
   display: inline-flex;
   align-items: center;
   gap: var(--evs-spacing-xs);
-  align-self: flex-start;
   padding: var(--evs-spacing-xs) var(--evs-spacing-sm);
   border: 1px solid var(--evs-border);
   border-radius: var(--evs-radius-sm);

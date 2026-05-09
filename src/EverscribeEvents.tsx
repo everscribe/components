@@ -6,8 +6,10 @@ import { ColumnPicker } from './components/ColumnPicker.js'
 import { EventDetail } from './components/EventDetail.js'
 import { EventTable } from './components/EventTable.js'
 import { ExportModal } from './components/ExportModal.js'
-import { FiltersPanel } from './components/FiltersPanel.js'
+import { FiltersPanel, countActiveColumnFilters } from './components/FiltersPanel.js'
 import type { FilterValues, TimeRangePreset } from './components/FiltersPanel.js'
+import { FiltersToggle } from './components/FiltersToggle.js'
+import { LiveIndicator } from './components/LiveIndicator.js'
 import { useClaims } from './hooks/useClaims.js'
 import { useDistinctValues } from './hooks/useDistinctValues.js'
 import { useEvents } from './hooks/useEvents.js'
@@ -118,6 +120,8 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
 
+  const pollIntervalMs = props.pollInterval ?? DEFAULT_POLL_INTERVAL_MS
+
   const availableColumns = useMemo(() => {
     if (claims?.columns && claims.columns.length > 0) return claims.columns
     return ALL_COLUMNS
@@ -147,6 +151,11 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
     [filters],
   )
 
+  // Live indicator tracks whether useEvents will actually poll —
+  // mirrors the disable condition inside useEvents (pollInterval > 0
+  // and no closed upper time bound).
+  const livePollActive = pollIntervalMs > 0 && !filterBefore
+
   const distinct = useDistinctValues({
     apiBase: props.apiBase ?? DEFAULT_API_BASE,
     token: activeToken,
@@ -158,7 +167,7 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
     apiBase: props.apiBase ?? DEFAULT_API_BASE,
     token: activeToken,
     pageSize: props.pageSize ?? DEFAULT_PAGE_SIZE,
-    pollInterval: props.pollInterval ?? DEFAULT_POLL_INTERVAL_MS,
+    pollInterval: pollIntervalMs,
     tokenEndpoint: props.tokenEndpoint,
     onTokenExpired: props.onTokenExpired,
     onError: props.onError,
@@ -273,12 +282,12 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
   return (
     <div className={rootClassName} style={props.style}>
       <div className="evs-toolbar">
-        <FiltersPanel
-          value={filters}
-          onChange={setFilters}
-          distinct={distinct}
+        <LiveIndicator active={livePollActive} />
+        <span className="evs-toolbar-spacer" />
+        <FiltersToggle
           open={filtersOpen}
           onOpenChange={setFiltersOpen}
+          activeCount={countActiveColumnFilters(filters)}
         />
         <button
           type="button"
@@ -293,6 +302,9 @@ export function EverscribeEvents(props: EverscribeEventsProps) {
           onToggle={toggleColumn}
         />
       </div>
+      {filtersOpen && (
+        <FiltersPanel value={filters} onChange={setFilters} distinct={distinct} />
+      )}
 
       {status === 'loading' && events.length === 0 && (
         <div className="evs-state evs-state-loading">Loading…</div>

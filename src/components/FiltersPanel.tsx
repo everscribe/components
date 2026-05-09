@@ -20,8 +20,6 @@ export interface FiltersPanelProps {
   value: FilterValues
   onChange: (next: FilterValues) => void
   distinct: DistinctValues
-  open: boolean
-  onOpenChange: (open: boolean) => void
 }
 
 const TIME_PRESETS: ReadonlyArray<{ key: TimeRangePreset; label: string }> = [
@@ -32,13 +30,7 @@ const TIME_PRESETS: ReadonlyArray<{ key: TimeRangePreset; label: string }> = [
   { key: 'all', label: 'All' },
 ]
 
-export function FiltersPanel({
-  value,
-  onChange,
-  distinct,
-  open,
-  onOpenChange,
-}: FiltersPanelProps) {
+export function FiltersPanel({ value, onChange, distinct }: FiltersPanelProps) {
   // Draft state for fields that require explicit Apply. Time range
   // presets bypass this (they apply immediately on click) — only
   // Custom needs since/before drafting.
@@ -59,8 +51,6 @@ export function FiltersPanel({
     setDraftActorType(value.actorType ?? '')
     setDraftTargetType(value.targetType ?? '')
   }, [value])
-
-  const activeCount = countActiveColumnFilters(value)
 
   const handlePresetClick = (range: TimeRangePreset) => {
     if (range === 'custom') {
@@ -88,137 +78,120 @@ export function FiltersPanel({
     onChange({ range: value.range })
   }
 
+  const activeCount = countActiveColumnFilters(value)
+
   return (
-    <div className="evs-filters">
-      <button
-        type="button"
-        className="evs-filter-toggle"
-        aria-expanded={open}
-        onClick={() => onOpenChange(!open)}
-      >
-        Set filters
-        {activeCount > 0 && (
-          <span className="evs-filter-toggle-badge">{activeCount}</span>
-        )}
-        <span className="evs-filter-toggle-caret" aria-hidden="true">
-          {open ? '▴' : '▾'}
-        </span>
-      </button>
+    <div className="evs-filter-panel">
+      <div className="evs-filter-tabs" role="tablist" aria-label="Time range">
+        {TIME_PRESETS.map((p) => (
+          <button
+            key={p.key}
+            type="button"
+            role="tab"
+            aria-selected={value.range === p.key}
+            className={
+              value.range === p.key
+                ? 'evs-filter-tab evs-filter-tab-selected'
+                : 'evs-filter-tab'
+            }
+            onClick={() => handlePresetClick(p.key)}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
 
-      {open && (
-        <div className="evs-filter-panel">
-          <div className="evs-filter-tabs" role="tablist" aria-label="Time range">
-            {TIME_PRESETS.map((p) => (
-              <button
-                key={p.key}
-                type="button"
-                role="tab"
-                aria-selected={value.range === p.key}
-                className={
-                  value.range === p.key
-                    ? 'evs-filter-tab evs-filter-tab-selected'
-                    : 'evs-filter-tab'
-                }
-                onClick={() => handlePresetClick(p.key)}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-
-          {value.range === 'custom' && (
-            <div className="evs-filter-row">
-              <label className="evs-filter-field">
-                <span className="evs-filter-field-label">From</span>
-                <input
-                  type="datetime-local"
-                  className="evs-filter-input"
-                  value={draftSince}
-                  onChange={(e) => setDraftSince(e.target.value)}
-                />
-              </label>
-              <label className="evs-filter-field">
-                <span className="evs-filter-field-label">To</span>
-                <input
-                  type="datetime-local"
-                  className="evs-filter-input"
-                  value={draftBefore}
-                  onChange={(e) => setDraftBefore(e.target.value)}
-                />
-              </label>
-            </div>
-          )}
-
-          <div className="evs-filter-row">
-            <select
-              className="evs-filter-select"
-              aria-label="Action"
-              value={draftAction}
-              onChange={(e) => setDraftAction(e.target.value)}
-            >
-              <option value="">All actions</option>
-              {distinct.actions.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="evs-filter-select"
-              aria-label="Actor type"
-              value={draftActorType}
-              onChange={(e) => setDraftActorType(e.target.value)}
-            >
-              <option value="">All actor types</option>
-              {distinct.actorTypes.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="evs-filter-select"
-              aria-label="Target type"
-              value={draftTargetType}
-              onChange={(e) => setDraftTargetType(e.target.value)}
-            >
-              <option value="">All target types</option>
-              {distinct.targetTypes.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="evs-filter-row">
+      {value.range === 'custom' && (
+        <div className="evs-filter-row">
+          <label className="evs-filter-field">
+            <span className="evs-filter-field-label">From</span>
             <input
-              type="text"
-              className="evs-filter-input evs-filter-actor-input"
-              placeholder="Actor (id, name, email)"
-              value={draftActor}
-              onChange={(e) => setDraftActor(e.target.value)}
+              type="datetime-local"
+              className="evs-filter-input"
+              value={draftSince}
+              onChange={(e) => setDraftSince(e.target.value)}
             />
-          </div>
-
-          <div className="evs-filter-actions">
-            <button type="button" className="evs-button" onClick={handleApply}>
-              Apply
-            </button>
-            {activeCount > 0 && (
-              <button
-                type="button"
-                className="evs-button evs-button-secondary"
-                onClick={handleClear}
-              >
-                Clear
-              </button>
-            )}
-          </div>
+          </label>
+          <label className="evs-filter-field">
+            <span className="evs-filter-field-label">To</span>
+            <input
+              type="datetime-local"
+              className="evs-filter-input"
+              value={draftBefore}
+              onChange={(e) => setDraftBefore(e.target.value)}
+            />
+          </label>
         </div>
       )}
+
+      <div className="evs-filter-row">
+        <select
+          className="evs-filter-select"
+          aria-label="Action"
+          value={draftAction}
+          onChange={(e) => setDraftAction(e.target.value)}
+        >
+          <option value="">All actions</option>
+          {distinct.actions.map((a) => (
+            <option key={a} value={a}>
+              {a}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="evs-filter-select"
+          aria-label="Actor type"
+          value={draftActorType}
+          onChange={(e) => setDraftActorType(e.target.value)}
+        >
+          <option value="">All actor types</option>
+          {distinct.actorTypes.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="evs-filter-select"
+          aria-label="Target type"
+          value={draftTargetType}
+          onChange={(e) => setDraftTargetType(e.target.value)}
+        >
+          <option value="">All target types</option>
+          {distinct.targetTypes.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="evs-filter-row">
+        <input
+          type="text"
+          className="evs-filter-input evs-filter-actor-input"
+          placeholder="Actor (id, name, email)"
+          value={draftActor}
+          onChange={(e) => setDraftActor(e.target.value)}
+        />
+      </div>
+
+      <div className="evs-filter-actions">
+        <button type="button" className="evs-button" onClick={handleApply}>
+          Apply
+        </button>
+        {activeCount > 0 && (
+          <button
+            type="button"
+            className="evs-button evs-button-secondary"
+            onClick={handleClear}
+          >
+            Clear
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -227,7 +200,7 @@ export function FiltersPanel({
 // active (action, actor, actor type, target type). Time range is
 // excluded from the count — it always has a value, so counting it
 // would make the badge perpetually non-zero.
-function countActiveColumnFilters(v: FilterValues): number {
+export function countActiveColumnFilters(v: FilterValues): number {
   let n = 0
   if (v.action) n++
   if (v.actor) n++
