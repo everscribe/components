@@ -44,6 +44,39 @@ export interface ListEventsParams {
   cursor?: string
   since?: string
   before?: string
+  action?: string
+  actor?: string
+  actorType?: string
+  targetType?: string
+}
+
+export interface DistinctActionsResponse {
+  actions: string[]
+}
+
+export interface DistinctActorTypesResponse {
+  actor_types: string[]
+}
+
+export interface DistinctTargetTypesResponse {
+  target_types: string[]
+}
+
+export type ExportFormat = 'csv' | 'json'
+
+export interface ExportEventsParams {
+  format: ExportFormat
+  since?: string
+  before?: string
+  action?: string
+  actor?: string
+  actorType?: string
+  targetType?: string
+}
+
+export interface ExportEventsResult {
+  blob: Blob
+  filename: string
 }
 
 export interface RequestOptions {
@@ -61,6 +94,10 @@ export async function listEvents(
   if (p?.cursor) url.searchParams.set('cursor', p.cursor)
   if (p?.since) url.searchParams.set('since', p.since)
   if (p?.before) url.searchParams.set('before', p.before)
+  if (p?.action) url.searchParams.set('action', p.action)
+  if (p?.actor) url.searchParams.set('actor', p.actor)
+  if (p?.actorType) url.searchParams.set('actor_type', p.actorType)
+  if (p?.targetType) url.searchParams.set('target_type', p.targetType)
   return request<ListEventsResponse>(url, opts)
 }
 
@@ -69,6 +106,75 @@ export async function getEvent(
 ): Promise<GetEventResponse> {
   const url = new URL(joinUrl(opts.apiBase, `events/${encodeURIComponent(opts.id)}`))
   return request<GetEventResponse>(url, opts)
+}
+
+export async function listDistinctActions(
+  opts: RequestOptions,
+): Promise<DistinctActionsResponse> {
+  const url = new URL(joinUrl(opts.apiBase, 'events/actions'))
+  return request<DistinctActionsResponse>(url, opts)
+}
+
+export async function listDistinctActorTypes(
+  opts: RequestOptions,
+): Promise<DistinctActorTypesResponse> {
+  const url = new URL(joinUrl(opts.apiBase, 'events/actor-types'))
+  return request<DistinctActorTypesResponse>(url, opts)
+}
+
+export async function listDistinctTargetTypes(
+  opts: RequestOptions,
+): Promise<DistinctTargetTypesResponse> {
+  const url = new URL(joinUrl(opts.apiBase, 'events/target-types'))
+  return request<DistinctTargetTypesResponse>(url, opts)
+}
+
+// exportEvents triggers the streaming export endpoint and returns the
+// response body as a Blob plus the server-suggested filename pulled
+// from Content-Disposition. The caller drives the actual download
+// (createObjectURL + anchor click) so this stays UI-agnostic.
+export async function exportEvents(
+  opts: RequestOptions & { params: ExportEventsParams },
+): Promise<ExportEventsResult> {
+  const url = new URL(joinUrl(opts.apiBase, 'events/export'))
+  const p = opts.params
+  url.searchParams.set('format', p.format)
+  if (p.since) url.searchParams.set('since', p.since)
+  if (p.before) url.searchParams.set('before', p.before)
+  if (p.action) url.searchParams.set('action', p.action)
+  if (p.actor) url.searchParams.set('actor', p.actor)
+  if (p.actorType) url.searchParams.set('actor_type', p.actorType)
+  if (p.targetType) url.searchParams.set('target_type', p.targetType)
+
+  let res: Response
+  try {
+    res = await fetch(url, {
+      headers: { Authorization: `Bearer ${opts.token}` },
+      signal: opts.signal,
+    })
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err
+    throw new EmbedError({ kind: 'network', cause: err, message: 'network error' })
+  }
+
+  if (!res.ok) throw await mapErrorResponse(res)
+
+  const blob = await res.blob()
+  const filename =
+    parseFilenameFromContentDisposition(res.headers.get('Content-Disposition')) ??
+    `events.${p.format}`
+  return { blob, filename }
+}
+
+function parseFilenameFromContentDisposition(value: string | null): string | undefined {
+  if (!value) return undefined
+  // Server emits `attachment; filename="events-2026-05-07.csv"`. Match the
+  // quoted form first, then fall back to the unquoted form.
+  const quoted = /filename="([^"]+)"/.exec(value)
+  if (quoted?.[1]) return quoted[1]
+  const unquoted = /filename=([^;]+)/.exec(value)
+  if (unquoted?.[1]) return unquoted[1].trim()
+  return undefined
 }
 
 async function request<T>(url: URL, opts: RequestOptions): Promise<T> {
