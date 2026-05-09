@@ -17,6 +17,15 @@ export interface UseEventsOptions {
   tokenEndpoint?: string
   onTokenExpired?: () => Promise<string>
   onError?: (err: Error) => void
+  // Server-side filters. Changes to any of these reset pagination and
+  // refetch from scratch. When `before` is set the polling loop is
+  // disabled — a closed time window can't get newer events.
+  since?: string
+  before?: string
+  action?: string
+  actor?: string
+  actorType?: string
+  targetType?: string
 }
 
 export interface UseEventsResult {
@@ -54,6 +63,16 @@ export function useEvents(opts: UseEventsOptions): UseEventsResult {
     if (!tokenRef.current) return
     const o = optsRef.current
     const params: ListEventsParams = { limit: o.pageSize }
+
+    // Always-applicable filters. Polling overrides `since` below so it
+    // only fetches events newer than the page top, regardless of the
+    // user's chosen time range.
+    if (o.since) params.since = o.since
+    if (o.before) params.before = o.before
+    if (o.action) params.action = o.action
+    if (o.actor) params.actor = o.actor
+    if (o.actorType) params.actorType = o.actorType
+    if (o.targetType) params.targetType = o.targetType
 
     if (kind === 'poll') {
       const newest = eventsRef.current[0]?.occurred_at
@@ -112,7 +131,7 @@ export function useEvents(opts: UseEventsOptions): UseEventsResult {
     setError(null)
   }, [])
 
-  // Initial fetch + reset on token / apiBase change.
+  // Initial fetch + reset on token / apiBase / filter change.
   useEffect(() => {
     setStatus('loading')
     setEvents([])
@@ -122,11 +141,24 @@ export function useEvents(opts: UseEventsOptions): UseEventsResult {
     const ctrl = new AbortController()
     fetchPage('initial', ctrl.signal)
     return () => ctrl.abort()
-  }, [opts.token, opts.apiBase, fetchPage])
+  }, [
+    opts.token,
+    opts.apiBase,
+    opts.since,
+    opts.before,
+    opts.action,
+    opts.actor,
+    opts.actorType,
+    opts.targetType,
+    fetchPage,
+  ])
 
-  // Polling loop with visibility pause.
+  // Polling loop with visibility pause. Disabled when `before` is set
+  // — a closed-upper-bound filter can't admit newer events, so polling
+  // would burn requests for nothing.
   useEffect(() => {
     if (opts.pollInterval <= 0) return
+    if (opts.before) return
 
     const interval = Math.max(MIN_POLL_INTERVAL_MS, opts.pollInterval)
     if (interval !== opts.pollInterval) {
@@ -180,7 +212,7 @@ export function useEvents(opts: UseEventsOptions): UseEventsResult {
         document.removeEventListener('visibilitychange', onVisible)
       }
     }
-  }, [opts.pollInterval, fetchPage])
+  }, [opts.pollInterval, opts.before, fetchPage])
 
   const loadMore = useCallback(() => {
     if (!cursorRef.current) return
