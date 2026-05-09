@@ -1,64 +1,23 @@
 {
-  "name": "@everscribe/events-react",
-  "version": "0.0.0",
-  "description": "Embeddable React component for Everscribe audit events.",
+  "name": "everscribe-components",
+  "private": true,
+  "description": "Everscribe embeddable components — multi-framework monorepo.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/everscribe/events-react.git"
+    "url": "git+https://github.com/everscribe/components.git"
   },
-  "homepage": "https://github.com/everscribe/events-react#readme",
-  "bugs": {
-    "url": "https://github.com/everscribe/events-react/issues"
-  },
-  "keywords": [
-    "everscribe",
-    "audit",
-    "events",
-    "react",
-    "embed"
-  ],
-  "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    },
-    "./styles.css": "./dist/styles.css"
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
-  "sideEffects": [
-    "**/*.css"
-  ],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
-  },
-  "peerDependencies": {
-    "react": ">=18",
-    "react-dom": ">=18"
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0",
-    "tsup": "^8.3.0",
+    "turbo": "^2.3.0",
     "typescript": "^5.6.0"
   },
-  "publishConfig": {
-    "access": "public"
-  },
+  "packageManager": "pnpm@11.0.8",
   "engines": {
     "node": ">=18"
   }
