@@ -28,16 +28,12 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    },
-    "./styles.css": "./dist/styles.css"
+    }
   },
   "files": [
     "dist",
     "README.md",
     "LICENSE"
-  ],
-  "sideEffects": [
-    "**/*.css"
   ],
   "scripts": {
     "build": "tsup",
@@ -46,7 +42,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@everscribe/components-core": "workspace:*"
+    "@everscribe/components-core": "workspace:*",
+    "@everscribe/components-styles": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=18",

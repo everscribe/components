@@ -29,6 +29,9 @@ importers:
       '@everscribe/components-core':
         specifier: workspace:*
         version: link:../core
+      '@everscribe/components-styles':
+        specifier: workspace:*
+        version: link:../styles
     devDependencies:
       '@types/react':
         specifier: ^18.3.0
@@ -48,6 +51,8 @@ importers:
       typescript:
         specifier: ^5.6.0
         version: 5.9.3
+
+  packages/styles: {}
 
 packages:
 

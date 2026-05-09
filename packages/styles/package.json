@@ -1,0 +1,39 @@
+{
+  "name": "@everscribe/components-styles",
+  "version": "0.0.0",
+  "description": "Stylesheets for Everscribe embeddable components.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/everscribe/components.git",
+    "directory": "packages/styles"
+  },
+  "homepage": "https://github.com/everscribe/components/tree/main/packages/styles#readme",
+  "bugs": {
+    "url": "https://github.com/everscribe/components/issues"
+  },
+  "keywords": [
+    "everscribe",
+    "audit",
+    "events",
+    "styles",
+    "css"
+  ],
+  "exports": {
+    "./default.css": "./default.css"
+  },
+  "files": [
+    "default.css",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
