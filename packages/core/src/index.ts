@@ -1,4 +1,11 @@
-export type { Event, EmbedClaims } from './types.js'
+export type {
+  ChangeField,
+  EmbedClaims,
+  Event,
+  GenerateNLPFiltersRequest,
+  GenerateNLPFiltersResponse,
+  MetadataKey,
+} from './types.js'
 
 export {
   EmbedError,
@@ -7,8 +14,12 @@ export {
   listDistinctActions,
   listDistinctActorTypes,
   listDistinctTargetTypes,
+  listDistinctResultStatuses,
+  listMetadataKeys,
+  listChangeFields,
   exportEvents,
   fetchTokenViaOpts,
+  generateNLPFilters,
 } from './api.js'
 export type {
   ApiErrorKind,
@@ -19,6 +30,10 @@ export type {
   DistinctActionsResponse,
   DistinctActorTypesResponse,
   DistinctTargetTypesResponse,
+  DistinctTenantsResponse,
+  DistinctResultStatusesResponse,
+  MetadataKeysResponse,
+  ChangeFieldsResponse,
   ExportFormat,
   ExportEventsParams,
   ExportEventsResult,

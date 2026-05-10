@@ -85,6 +85,9 @@ export class AuditTrailElement extends HTMLElement {
     actions: [],
     actorTypes: [],
     targetTypes: [],
+    resultStatuses: [],
+    metadataKeys: [],
+    changeFields: [],
   }
 
   // UI state.
@@ -301,7 +304,14 @@ export class AuditTrailElement extends HTMLElement {
     this.eventsStore = null
     this.distinctStore = null
     this.eventsState = null
-    this.distinctValues = { actions: [], actorTypes: [], targetTypes: [] }
+    this.distinctValues = {
+      actions: [],
+      actorTypes: [],
+      targetTypes: [],
+      resultStatuses: [],
+      metadataKeys: [],
+      changeFields: [],
+    }
   }
 
   private cleanup() {
@@ -571,7 +581,7 @@ export class AuditTrailElement extends HTMLElement {
 
   private renderFiltersToggle(): HTMLElement {
     const activeCount = countActiveColumnFilters(this.filters)
-    const children: Node[] = [document.createTextNode('Set filters')]
+    const children: Node[] = [document.createTextNode('Search options')]
     if (activeCount > 0) {
       children.push(
         h('span', { class: 'audit-trail-filter-toggle-badge' }, String(activeCount)),

@@ -18,7 +18,7 @@ export interface EventDetailProps {
   theme?: 'light' | 'dark'
 }
 
-type Tab = 'raw' | 'diff'
+type Tab = 'raw' | 'diff' | 'metadata'
 
 export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProps) {
   const [mounted, setMounted] = useState(false)
@@ -32,6 +32,9 @@ export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProp
     [event.change, showDiff],
   )
   const rawJson = useMemo(() => JSON.stringify(event, null, 2), [event])
+  const highlightedJson = useMemo(() => highlightJSON(rawJson), [rawJson])
+  const metadataRows = useMemo(() => buildMetadataRows(event.metadata), [event.metadata])
+  const showMetadata = metadataRows.length > 0
 
   useEffect(() => setMounted(true), [])
 
@@ -88,34 +91,39 @@ export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProp
           <code>{event.id}</code>
         </p>
 
-        {showDiff && (
+        {(showDiff || showMetadata) && (
           <div className="audit-trail-inspect-tabs" role="tablist" aria-label="View">
             <button
               type="button"
               role="tab"
               aria-selected={tab === 'raw'}
-              className={
-                tab === 'raw'
-                  ? 'audit-trail-inspect-tab audit-trail-inspect-tab-active'
-                  : 'audit-trail-inspect-tab'
-              }
+              className={inspectTabClass(tab === 'raw')}
               onClick={() => setTab('raw')}
             >
               Raw
             </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === 'diff'}
-              className={
-                tab === 'diff'
-                  ? 'audit-trail-inspect-tab audit-trail-inspect-tab-active'
-                  : 'audit-trail-inspect-tab'
-              }
-              onClick={() => setTab('diff')}
-            >
-              Diff
-            </button>
+            {showDiff && (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={tab === 'diff'}
+                className={inspectTabClass(tab === 'diff')}
+                onClick={() => setTab('diff')}
+              >
+                Diff
+              </button>
+            )}
+            {showMetadata && (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={tab === 'metadata'}
+                className={inspectTabClass(tab === 'metadata')}
+                onClick={() => setTab('metadata')}
+              >
+                Metadata
+              </button>
+            )}
           </div>
         )}
 
@@ -123,7 +131,12 @@ export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProp
           <div className="audit-trail-inspect-panel">
             <div className="audit-trail-code-block-wrap">
               <pre className="audit-trail-code-block">
-                <code>{rawJson}</code>
+                {/* dangerouslySetInnerHTML carries pre-escaped HTML
+                    from highlightJSON — every value-bearing slot in
+                    the source string is HTML-escaped before the
+                    token regex runs, so injected user data renders
+                    as text. */}
+                <code dangerouslySetInnerHTML={{ __html: highlightedJson }} />
               </pre>
               <button
                 type="button"
@@ -141,6 +154,12 @@ export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProp
         {tab === 'diff' && showDiff && (
           <div className="audit-trail-inspect-panel">
             <DiffTable lines={diff.lines} />
+          </div>
+        )}
+
+        {tab === 'metadata' && showMetadata && (
+          <div className="audit-trail-inspect-panel">
+            <MetadataTable rows={metadataRows} />
           </div>
         )}
         </div>
@@ -224,3 +243,114 @@ const MONTHS = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ]
+
+function inspectTabClass(active: boolean): string {
+  return active
+    ? 'audit-trail-inspect-tab audit-trail-inspect-tab-active'
+    : 'audit-trail-inspect-tab'
+}
+
+// ============================================================
+// JSON syntax highlighter for the Raw tab. Walks the pretty-
+// printed source, escapes HTML, and wraps tokens in <span>
+// classes the CSS colors. Punctuation (braces, commas, colons)
+// keeps the default text color.
+// ============================================================
+function highlightJSON(json: string): string {
+  const safe = escapeHTML(json)
+  return safe.replace(
+    /("(?:\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(?:\s*:)?|\b(?:true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+    (match) => {
+      let cls = 'audit-trail-json-num'
+      if (match.startsWith('"')) {
+        cls = /:$/.test(match)
+          ? 'audit-trail-json-key'
+          : 'audit-trail-json-str'
+      } else if (/true|false/.test(match)) {
+        cls = 'audit-trail-json-bool'
+      } else if (/null/.test(match)) {
+        cls = 'audit-trail-json-null'
+      }
+      return `<span class="${cls}">${match}</span>`
+    },
+  )
+}
+
+function escapeHTML(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+// ============================================================
+// Metadata tab — flat key/value table. Renders each top-level
+// metadata field as one row with type hint + value. Nested
+// objects / arrays render compactly so the column doesn't blow
+// out; users still get the full picture from the Raw tab.
+// ============================================================
+
+interface MetadataRow {
+  key: string
+  value: string
+  type: string
+}
+
+function buildMetadataRows(metadata: Record<string, unknown> | undefined): MetadataRow[] {
+  if (!metadata) return []
+  const keys = Object.keys(metadata)
+  if (keys.length === 0) return []
+  keys.sort()
+  return keys.map((k) => {
+    const raw = metadata[k]
+    return { key: k, value: renderMetadataValue(raw), type: classifyValue(raw) }
+  })
+}
+
+function renderMetadataValue(v: unknown): string {
+  if (v === null || v === undefined) return ''
+  if (typeof v === 'string') return v
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v)
+  // Objects/arrays render as compact JSON so the cell stays readable.
+  try {
+    return JSON.stringify(v)
+  } catch {
+    return String(v)
+  }
+}
+
+function classifyValue(v: unknown): string {
+  if (v === null) return 'null'
+  if (Array.isArray(v)) return 'array'
+  if (typeof v === 'object') return 'object'
+  return typeof v
+}
+
+function MetadataTable({ rows }: { rows: MetadataRow[] }) {
+  return (
+    <table className="audit-trail-metadata-kv-table">
+      <thead>
+        <tr>
+          <th className="audit-trail-md-col-key">Key</th>
+          <th className="audit-trail-md-col-type">Type</th>
+          <th className="audit-trail-md-col-value">Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr key={r.key}>
+            <td className="audit-trail-md-col-key">
+              <code>{r.key}</code>
+            </td>
+            <td className="audit-trail-md-col-type">
+              <span className="audit-trail-muted">{r.type}</span>
+            </td>
+            <td className="audit-trail-md-col-value">
+              <code>{r.value}</code>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}

@@ -2,11 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { ActiveFilterChips } from './components/ActiveFilterChips.js'
 import { ColumnPicker } from './components/ColumnPicker.js'
 import { EventDetail } from './components/EventDetail.js'
 import { EventTable } from './components/EventTable.js'
 import { ExportModal } from './components/ExportModal.js'
-import { FiltersPanel, countActiveColumnFilters } from './components/FiltersPanel.js'
+import {
+  FiltersPanel,
+  countActiveColumnFilters,
+  parseQClauses,
+} from './components/FiltersPanel.js'
 import type { FilterValues, TimeRangePreset } from './components/FiltersPanel.js'
 import { FiltersToggle } from './components/FiltersToggle.js'
 import { LiveIndicator } from './components/LiveIndicator.js'
@@ -181,7 +186,12 @@ export function AuditTrail(props: AuditTrailProps) {
     action: filters.action,
     actor: filters.actor,
     actorType: filters.actorType,
+    tenantId: filters.tenantId,
     targetType: filters.targetType,
+    targetId: filters.targetId,
+    resultStatus: filters.resultStatus,
+    originIP: filters.originIP,
+    q: filters.q,
   })
 
   const handleExportDownload = useCallback(
@@ -195,7 +205,12 @@ export function AuditTrail(props: AuditTrailProps) {
         action: filters.action,
         actor: filters.actor,
         actorType: filters.actorType,
+        tenantId: filters.tenantId,
         targetType: filters.targetType,
+        targetId: filters.targetId,
+        resultStatus: filters.resultStatus,
+        originIP: filters.originIP,
+        q: filters.q,
       }
       const run = (token: string) =>
         exportEvents({ apiBase, token, params })
@@ -228,7 +243,12 @@ export function AuditTrail(props: AuditTrailProps) {
       filters.action,
       filters.actor,
       filters.actorType,
+      filters.tenantId,
       filters.targetType,
+      filters.targetId,
+      filters.resultStatus,
+      filters.originIP,
+      filters.q,
     ],
   )
 
@@ -292,7 +312,10 @@ export function AuditTrail(props: AuditTrailProps) {
         <FiltersToggle
           open={filtersOpen}
           onOpenChange={setFiltersOpen}
-          activeCount={countActiveColumnFilters(filters)}
+          activeCount={
+            countActiveColumnFilters(filters) +
+            (filters.q ? parseQClauses(filters.q).length : 0)
+          }
         />
         <button
           type="button"
@@ -307,8 +330,20 @@ export function AuditTrail(props: AuditTrailProps) {
           onToggle={toggleColumn}
         />
       </div>
+
+      <ActiveFilterChips value={filters} onChange={setFilters} />
+
       {filtersOpen && (
-        <FiltersPanel value={filters} onChange={setFilters} distinct={distinct} />
+        <FiltersPanel
+          value={filters}
+          onChange={setFilters}
+          distinct={distinct}
+          claims={claims}
+          apiBase={props.apiBase ?? DEFAULT_API_BASE}
+          token={activeToken}
+          tokenEndpoint={props.tokenEndpoint}
+          onTokenExpired={props.onTokenExpired}
+        />
       )}
 
       {status === 'loading' && events.length === 0 && (

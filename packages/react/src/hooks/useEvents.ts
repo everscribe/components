@@ -28,7 +28,12 @@ export interface UseEventsOptions {
   action?: string
   actor?: string
   actorType?: string
+  tenantId?: string
   targetType?: string
+  targetId?: string
+  resultStatus?: string
+  originIP?: string
+  q?: string
 }
 
 export interface UseEventsResult {
@@ -70,7 +75,12 @@ export function useEvents(opts: UseEventsOptions): UseEventsResult {
       action: opts.action,
       actor: opts.actor,
       actorType: opts.actorType,
+      tenantId: opts.tenantId,
       targetType: opts.targetType,
+      targetId: opts.targetId,
+      resultStatus: opts.resultStatus,
+      originIP: opts.originIP,
+      q: opts.q,
     })
     setStore(s)
     return () => {
@@ -86,7 +96,12 @@ export function useEvents(opts: UseEventsOptions): UseEventsResult {
     opts.action,
     opts.actor,
     opts.actorType,
+    opts.tenantId,
     opts.targetType,
+    opts.targetId,
+    opts.resultStatus,
+    opts.originIP,
+    opts.q,
   ])
 
   const subscribe = useMemo(

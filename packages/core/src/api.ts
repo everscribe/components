@@ -1,4 +1,10 @@
-import type { Event } from './types.js'
+import type {
+  ChangeField,
+  Event,
+  GenerateNLPFiltersRequest,
+  GenerateNLPFiltersResponse,
+  MetadataKey,
+} from './types.js'
 
 export type ApiErrorKind =
   | 'unauthorized'
@@ -47,7 +53,17 @@ export interface ListEventsParams {
   action?: string
   actor?: string
   actorType?: string
+  tenantId?: string
   targetType?: string
+  targetId?: string
+  resultStatus?: string
+  originIP?: string
+  /**
+   * q is the Lucene-flavored DSL accepted by the embed events
+   * endpoint. Server rejects it (claim_error) when the token
+   * lacks allow_dsl_input.
+   */
+  q?: string
 }
 
 export interface DistinctActionsResponse {
@@ -62,6 +78,22 @@ export interface DistinctTargetTypesResponse {
   target_types: string[]
 }
 
+export interface DistinctTenantsResponse {
+  tenants: string[]
+}
+
+export interface DistinctResultStatusesResponse {
+  statuses: string[]
+}
+
+export interface MetadataKeysResponse {
+  keys: MetadataKey[]
+}
+
+export interface ChangeFieldsResponse {
+  fields: ChangeField[]
+}
+
 export type ExportFormat = 'csv' | 'json'
 
 export interface ExportEventsParams {
@@ -71,7 +103,12 @@ export interface ExportEventsParams {
   action?: string
   actor?: string
   actorType?: string
+  tenantId?: string
   targetType?: string
+  targetId?: string
+  resultStatus?: string
+  originIP?: string
+  q?: string
 }
 
 export interface ExportEventsResult {
@@ -89,16 +126,28 @@ export async function listEvents(
   opts: RequestOptions & { params?: ListEventsParams },
 ): Promise<ListEventsResponse> {
   const url = new URL(joinUrl(opts.apiBase, 'events'))
-  const p = opts.params
-  if (p?.limit !== undefined) url.searchParams.set('limit', String(p.limit))
-  if (p?.cursor) url.searchParams.set('cursor', p.cursor)
-  if (p?.since) url.searchParams.set('since', p.since)
-  if (p?.before) url.searchParams.set('before', p.before)
-  if (p?.action) url.searchParams.set('action', p.action)
-  if (p?.actor) url.searchParams.set('actor', p.actor)
-  if (p?.actorType) url.searchParams.set('actor_type', p.actorType)
-  if (p?.targetType) url.searchParams.set('target_type', p.targetType)
+  applyListParams(url, opts.params)
   return request<ListEventsResponse>(url, opts)
+}
+
+// applyListParams writes the shared filter params onto a URL. Shared
+// between listEvents (GET /events) and exportEvents (GET /events/export)
+// so the two stay in sync as new filter dimensions are added.
+function applyListParams(url: URL, p: ListEventsParams | undefined): void {
+  if (!p) return
+  if (p.limit !== undefined) url.searchParams.set('limit', String(p.limit))
+  if (p.cursor) url.searchParams.set('cursor', p.cursor)
+  if (p.since) url.searchParams.set('since', p.since)
+  if (p.before) url.searchParams.set('before', p.before)
+  if (p.action) url.searchParams.set('action', p.action)
+  if (p.actor) url.searchParams.set('actor', p.actor)
+  if (p.actorType) url.searchParams.set('actor_type', p.actorType)
+  if (p.tenantId) url.searchParams.set('tenant_id', p.tenantId)
+  if (p.targetType) url.searchParams.set('target_type', p.targetType)
+  if (p.targetId) url.searchParams.set('target_id', p.targetId)
+  if (p.resultStatus) url.searchParams.set('result_status', p.resultStatus)
+  if (p.originIP) url.searchParams.set('origin_ip', p.originIP)
+  if (p.q) url.searchParams.set('q', p.q)
 }
 
 export async function getEvent(
@@ -129,6 +178,63 @@ export async function listDistinctTargetTypes(
   return request<DistinctTargetTypesResponse>(url, opts)
 }
 
+export async function listDistinctResultStatuses(
+  opts: RequestOptions,
+): Promise<DistinctResultStatusesResponse> {
+  const url = new URL(joinUrl(opts.apiBase, 'events/result-statuses'))
+  return request<DistinctResultStatusesResponse>(url, opts)
+}
+
+export async function listMetadataKeys(
+  opts: RequestOptions,
+): Promise<MetadataKeysResponse> {
+  const url = new URL(joinUrl(opts.apiBase, 'events/metadata-keys'))
+  return request<MetadataKeysResponse>(url, opts)
+}
+
+export async function listChangeFields(
+  opts: RequestOptions,
+): Promise<ChangeFieldsResponse> {
+  const url = new URL(joinUrl(opts.apiBase, 'events/change-fields'))
+  return request<ChangeFieldsResponse>(url, opts)
+}
+
+// generateNLPFilters posts a natural-language query to the embed NLP
+// endpoint. Server-side checks: AllowNLP claim required (403 when
+// missing); per-jti rate limited (429); query length ≤ 500 chars
+// (400). Returns the translated DSL plus the unsupported list when
+// the model couldn't express part of the request.
+export async function generateNLPFilters(
+  opts: RequestOptions & { query: string },
+): Promise<GenerateNLPFiltersResponse> {
+  const url = new URL(joinUrl(opts.apiBase, 'events/nlp'))
+  const body: GenerateNLPFiltersRequest = { q: opts.query }
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${opts.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal: opts.signal,
+    })
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err
+    throw new EmbedError({ kind: 'network', cause: err, message: 'network error' })
+  }
+  if (res.ok) return (await res.json()) as GenerateNLPFiltersResponse
+  // 403 (claim refused) shares the bad_request kind so the caller
+  // surfaces a clear "NLP not allowed on this token" rather than a
+  // bare 4xx. Other errors fall through to the standard mapper.
+  if (res.status === 403) {
+    const message = (await res.text()).trim() || 'nlp_not_allowed'
+    throw new EmbedError({ kind: 'bad_request', status: 403, message })
+  }
+  throw await mapErrorResponse(res)
+}
+
 // exportEvents triggers the streaming export endpoint and returns the
 // response body as a Blob plus the server-suggested filename pulled
 // from Content-Disposition. The caller drives the actual download
@@ -137,14 +243,9 @@ export async function exportEvents(
   opts: RequestOptions & { params: ExportEventsParams },
 ): Promise<ExportEventsResult> {
   const url = new URL(joinUrl(opts.apiBase, 'events/export'))
-  const p = opts.params
-  url.searchParams.set('format', p.format)
-  if (p.since) url.searchParams.set('since', p.since)
-  if (p.before) url.searchParams.set('before', p.before)
-  if (p.action) url.searchParams.set('action', p.action)
-  if (p.actor) url.searchParams.set('actor', p.actor)
-  if (p.actorType) url.searchParams.set('actor_type', p.actorType)
-  if (p.targetType) url.searchParams.set('target_type', p.targetType)
+  const { format, ...rest } = opts.params
+  url.searchParams.set('format', format)
+  applyListParams(url, rest)
 
   let res: Response
   try {
@@ -162,7 +263,7 @@ export async function exportEvents(
   const blob = await res.blob()
   const filename =
     parseFilenameFromContentDisposition(res.headers.get('Content-Disposition')) ??
-    `events.${p.format}`
+    `events.${format}`
   return { blob, filename }
 }
 

@@ -1,15 +1,22 @@
 import {
   EmbedError,
   fetchTokenViaOpts,
+  listChangeFields,
   listDistinctActions,
   listDistinctActorTypes,
+  listDistinctResultStatuses,
   listDistinctTargetTypes,
+  listMetadataKeys,
 } from './api.js'
+import type { ChangeField, MetadataKey } from './types.js'
 
 export interface DistinctValues {
   actions: string[]
   actorTypes: string[]
   targetTypes: string[]
+  resultStatuses: string[]
+  metadataKeys: MetadataKey[]
+  changeFields: ChangeField[]
 }
 
 export interface DistinctValuesStoreConfig {
@@ -29,6 +36,9 @@ export const EMPTY_DISTINCT_VALUES: DistinctValues = {
   actions: [],
   actorTypes: [],
   targetTypes: [],
+  resultStatuses: [],
+  metadataKeys: [],
+  changeFields: [],
 }
 
 export function createDistinctValuesStore(
@@ -46,16 +56,26 @@ export function createDistinctValuesStore(
 
   const fetchOnce = async (token: string) => {
     const base = { apiBase: config.apiBase, token, signal: ctrl.signal }
-    const [actions, actorTypes, targetTypes] = await Promise.all([
+    const [actions, actorTypes, targetTypes, statuses, mdk, cf] = await Promise.all([
       listDistinctActions(base).catch(() => ({ actions: [] })),
       listDistinctActorTypes(base).catch(() => ({ actor_types: [] })),
       listDistinctTargetTypes(base).catch(() => ({ target_types: [] })),
+      listDistinctResultStatuses(base).catch(() => ({ statuses: [] })),
+      listMetadataKeys(base).catch(() => ({ keys: [] })),
+      listChangeFields(base).catch(() => ({ fields: [] })),
     ])
     if (disposed) return
+    // Coerce nullable response fields to empty arrays — the Go server
+    // serializes a nil slice as `null`, not `[]`, when a project has
+    // no rows. Without this guard, `distinct.metadataKeys.map(...)`
+    // crashes on a fresh project.
     setState({
-      actions: actions.actions,
-      actorTypes: actorTypes.actor_types,
-      targetTypes: targetTypes.target_types,
+      actions: actions.actions ?? [],
+      actorTypes: actorTypes.actor_types ?? [],
+      targetTypes: targetTypes.target_types ?? [],
+      resultStatuses: statuses.statuses ?? [],
+      metadataKeys: mdk.keys ?? [],
+      changeFields: cf.fields ?? [],
     })
   }
 

@@ -24,7 +24,12 @@ export interface EventsStoreConfig {
   action?: string
   actor?: string
   actorType?: string
+  tenantId?: string
   targetType?: string
+  targetId?: string
+  resultStatus?: string
+  originIP?: string
+  q?: string
 }
 
 export interface EventsStoreState {
@@ -73,7 +78,12 @@ export function createEventsStore(config: EventsStoreConfig): EventsStore {
     if (config.action) params.action = config.action
     if (config.actor) params.actor = config.actor
     if (config.actorType) params.actorType = config.actorType
+    if (config.tenantId) params.tenantId = config.tenantId
     if (config.targetType) params.targetType = config.targetType
+    if (config.targetId) params.targetId = config.targetId
+    if (config.resultStatus) params.resultStatus = config.resultStatus
+    if (config.originIP) params.originIP = config.originIP
+    if (config.q) params.q = config.q
 
     if (kind === 'poll') {
       const newest = state.events[0]?.occurred_at
