@@ -70,6 +70,10 @@ func handleEmbedToken(m *minter.Client) http.HandlerFunc {
             ExpiresIn:      time.Hour,
             AllowedColumns: []string{"occurred_at", "action", "actor"},
             AllowedActions: []string{"user.*", "billing.invoice.created"},
+            // Optional: opt the embed into the AI / Query tabs. See
+            // "AI and Query tabs" below.
+            AllowDSLInput: true,
+            AllowNLP:      true,
         })
         if err != nil {
             http.Error(w, "mint failed", http.StatusInternalServerError)
@@ -120,10 +124,27 @@ If you need parallel-tab budget, mint a fresh token per page load — each tab g
 | `tenant_id` | Hard-pinned. No tenant switcher. |
 | `columns` | Column picker lists only whitelisted columns. End-users can hide further; they can't reveal anything outside the whitelist. |
 | `actions` | Action dropdown lists each claim entry verbatim — exact (`user.login`) and wildcard (`user.*`) both render as one option. |
+| `allowed_fields` | Restricts which catalog fields can appear in DSL / NLP-generated queries (e.g. `metadata.*`, `actor.id`). Server rejects out-of-scope fields independently of the UI. |
+| `allow_dsl_input` | Reveals the **Query** tab — a free-text DSL input for power users. When `false`, the tab is hidden and `?q=` is refused at the API. |
+| `allow_nlp` | Reveals the **AI** tab — natural-language → DSL translation via `POST /v1/embed/events/nlp`. When `false`, the tab is hidden and the endpoint returns 403. |
 
 When a claim is omitted, the component behaves like the unrestricted UI for that dimension.
 
 > **Heads up — action filter pagination.** v1 filters actions client-side, so a narrow filter on a sparsely-matching action may need several "Load more" clicks to fill the next batch. The token's `actions` ceiling is always enforced server-side; this only affects within-claim narrowing.
+
+## AI and Query tabs
+
+The "Set filters" panel is a three-tab strip — **AI**, **Filters**, **Query** — gated by token claims:
+
+- **Filters** — always shown. Dropdowns and text inputs for action, actor, tenant, target, result status, origin IP, plus an inline builder for `metadata.<key>` and `change.<field>` clauses. End-users compose filters and click **Add filters** to apply.
+- **Query** — shown when `allow_dsl_input: true`. A free-text input that accepts a Lucene-flavored DSL. Clauses look like `field:value` (equality), `field:!value` (not), `field:~value` (contains), `field:[a TO b]` (range), `field:(v1 OR v2)` (within-field OR), joined at the top level by `AND`. Submission replaces any active column filters.
+- **AI** — shown when `allow_nlp: true`. The user types a natural-language question ("failed logins in past 24 hours"); the component POSTs to `/v1/embed/events/nlp`, the server calls Anthropic, and the translated DSL is applied. The Translated banner shows the generated DSL so power users can copy it into the Query tab or audit what the model produced.
+
+The AI and Query tabs interact with the same `?q=` parameter as the inline metadata builder, so clicking **Add filters** or **Add filter** elsewhere clears the AI / DSL state — only one source of truth at a time.
+
+**Cost note.** Every AI submission counts against the project's Anthropic budget (configured server-side via `ANTHROPIC_API_KEY` and `EVERSCRIBE_NLP_RATE_LIMIT`). Per-`jti` rate limiting caps a runaway end-user; you control the rest by minting tokens with or without `allow_nlp`.
+
+**Server enforcement.** `allow_dsl_input` and `allow_nlp` are claim-checked on every request — hiding the tab is a UX layer, not a security boundary. A user who reverse-engineers the API still can't bypass the gate.
 
 ## Theming
 

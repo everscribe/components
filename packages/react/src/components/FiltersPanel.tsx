@@ -899,11 +899,7 @@ function QueryTabPanel({ value, onChange }: QueryTabProps) {
     <form className="audit-trail-query-form" onSubmit={handleSubmit}>
       <label className="audit-trail-query-label" htmlFor="audit-trail-query-input">
         Query{' '}
-        <a
-          href="https://github.com/everscribe/monorepo/blob/main/docs/events-filter-and-nlp-spec.md"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href="https://everscribe.io/docs" target="_blank" rel="noopener noreferrer">
           (see docs)
         </a>
       </label>
