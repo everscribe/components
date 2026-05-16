@@ -674,15 +674,9 @@ function renderMetadataFilterSection(
   const mdValue2Row = metadataVariant.children[3] as HTMLElement
   mdValue2Row.style.display = 'none'
 
-  const showVariant = (v: AddFilterVariant) => {
-    variant = v
-    for (const el of variants) {
-      el.style.display = el.dataset.variant === v ? '' : 'none'
-    }
-    refresh()
-  }
-  showVariant('metadata')
-
+  // refresh must be declared BEFORE showVariant — showVariant's body
+  // references refresh via closure, and the initial showVariant('metadata')
+  // call below would hit refresh in the temporal dead zone otherwise.
   const refresh = () => {
     const compiled = compileMetaClause({
       variant,
@@ -707,6 +701,15 @@ function renderMetadataFilterSection(
       errorEl.style.display = 'none'
     }
   }
+
+  const showVariant = (v: AddFilterVariant) => {
+    variant = v
+    for (const el of variants) {
+      el.style.display = el.dataset.variant === v ? '' : 'none'
+    }
+    refresh()
+  }
+  showVariant('metadata')
 
   typeSelect.addEventListener('change', () => showVariant(typeSelect.value as AddFilterVariant))
   mdOp.addEventListener('change', () => {

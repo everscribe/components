@@ -79,12 +79,6 @@ export function FiltersPanel({
     pickInitialTab(value, claims),
   )
 
-  // Re-sync the active tab when the AI banner appears (user just
-  // submitted a NL query) so the explanation lands in the right tab.
-  useEffect(() => {
-    if (value.nlpQ && allowNLP) setActiveTab('ai')
-  }, [value.nlpQ, allowNLP])
-
   return (
     <div className="audit-trail-filter-panel">
       <div className="audit-trail-filter-modes" role="tablist" aria-label="Filter mode">
