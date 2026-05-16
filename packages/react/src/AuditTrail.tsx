@@ -343,6 +343,7 @@ export function AuditTrail(props: AuditTrailProps) {
           token={activeToken}
           tokenEndpoint={props.tokenEndpoint}
           onTokenExpired={props.onTokenExpired}
+          onApplied={() => setFiltersOpen(false)}
         />
       )}
 

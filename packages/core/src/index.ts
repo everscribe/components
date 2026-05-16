@@ -14,6 +14,7 @@ export {
   listDistinctActions,
   listDistinctActorTypes,
   listDistinctTargetTypes,
+  listDistinctTenants,
   listDistinctResultStatuses,
   listMetadataKeys,
   listChangeFields,

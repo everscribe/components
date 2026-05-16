@@ -59,6 +59,10 @@ export interface FiltersPanelOptions {
   // Prompt-tab Search fires the NLP round-trip on the parent. Parent
   // flips nlpState to 'loading' immediately and re-renders.
   onNLPSubmit: (query: string) => void
+  // Fired when the user commits a Filters-tab action ("Add filters",
+  // "Add filter"). Parent rolls the panel up so the newly applied
+  // filters and resulting table are immediately visible.
+  onApplied?: () => void
 }
 
 const TIME_PRESETS: ReadonlyArray<{ key: TimeRangePreset; label: string }> = [
@@ -281,13 +285,14 @@ function renderUnsupportedList(items: string[]): HTMLElement {
 // ============================================================
 
 function renderFiltersTabPanel(opts: FiltersPanelOptions): HTMLElement {
-  const { value, distinct, onChange } = opts
+  const { value, distinct, onChange, onApplied } = opts
 
   // Drafts live in the DOM inputs themselves. Add filters reads them
   // at click time — no React-style state syncing.
   let actionSelect: HTMLSelectElement
   let actorTypeSelect: HTMLSelectElement
   let targetTypeSelect: HTMLSelectElement
+  let tenantSelect: HTMLSelectElement | null = null
   let resultSelect: HTMLSelectElement | null = null
   let actorInput: HTMLInputElement
   let targetIDInput: HTMLInputElement
@@ -366,6 +371,15 @@ function renderFiltersTabPanel(opts: FiltersPanelOptions): HTMLElement {
     distinct.targetTypes,
   )
   const dropdownChildren: HTMLElement[] = [actionSelect, actorTypeSelect, targetTypeSelect]
+  if (distinct.tenants.length > 0) {
+    tenantSelect = buildSelect(
+      'Tenant',
+      'All tenants',
+      value.tenantId ?? '',
+      distinct.tenants,
+    )
+    dropdownChildren.push(tenantSelect)
+  }
   if (distinct.resultStatuses.length > 0) {
     resultSelect = buildSelect(
       'Result',
@@ -382,6 +396,9 @@ function renderFiltersTabPanel(opts: FiltersPanelOptions): HTMLElement {
   )
 
   // ---- column-filter text inputs ----
+  // Free-text filters each on their own row — three inputs side-by-
+  // side wrapped awkwardly on narrow embed widths. Stacked they
+  // breathe and read naturally.
   actorInput = buildTextInput(
     value.actor ?? '',
     'Actor (id, name, email)',
@@ -390,20 +407,16 @@ function renderFiltersTabPanel(opts: FiltersPanelOptions): HTMLElement {
   targetIDInput = buildTextInput(
     value.targetId ?? '',
     'Target ID',
-    'audit-trail-filter-input',
+    'audit-trail-filter-input audit-trail-filter-wide-input',
   )
   originIPInput = buildTextInput(
     value.originIP ?? '',
     'Origin IP',
-    'audit-trail-filter-input',
+    'audit-trail-filter-input audit-trail-filter-wide-input',
   )
-  const textRow = h(
-    'div',
-    { class: 'audit-trail-filter-row' },
-    actorInput,
-    targetIDInput,
-    originIPInput,
-  )
+  const textRowActor = h('div', { class: 'audit-trail-filter-row' }, actorInput)
+  const textRowTarget = h('div', { class: 'audit-trail-filter-row' }, targetIDInput)
+  const textRowOrigin = h('div', { class: 'audit-trail-filter-row' }, originIPInput)
 
   // ---- Add filters button (commits all drafts, clears NLP/DSL) ----
   const addBtn = h(
@@ -420,6 +433,7 @@ function renderFiltersTabPanel(opts: FiltersPanelOptions): HTMLElement {
     if (norm(actionSelect.value) !== value.action) return true
     if (norm(actorTypeSelect.value) !== value.actorType) return true
     if (norm(targetTypeSelect.value) !== value.targetType) return true
+    if (tenantSelect && norm(tenantSelect.value) !== value.tenantId) return true
     if (resultSelect && norm(resultSelect.value) !== value.resultStatus) return true
     if (norm(actorInput.value) !== value.actor) return true
     if (norm(targetIDInput.value) !== value.targetId) return true
@@ -437,9 +451,13 @@ function renderFiltersTabPanel(opts: FiltersPanelOptions): HTMLElement {
 
   // Wire input events on every draft surface to re-evaluate the
   // dirty flag. Cheap — no API calls until the button is clicked.
-  for (const el of [actionSelect, actorTypeSelect, targetTypeSelect, resultSelect].filter(
-    Boolean,
-  ) as HTMLSelectElement[]) {
+  for (const el of [
+    actionSelect,
+    actorTypeSelect,
+    targetTypeSelect,
+    tenantSelect,
+    resultSelect,
+  ].filter(Boolean) as HTMLSelectElement[]) {
     el.addEventListener('change', refreshDirty)
   }
   for (const el of [actorInput, targetIDInput, originIPInput].filter(
@@ -456,6 +474,7 @@ function renderFiltersTabPanel(opts: FiltersPanelOptions): HTMLElement {
       action: norm(actionSelect.value),
       actorType: norm(actorTypeSelect.value),
       targetType: norm(targetTypeSelect.value),
+      tenantId: tenantSelect ? norm(tenantSelect.value) : value.tenantId,
       resultStatus: resultSelect ? norm(resultSelect.value) : value.resultStatus,
       actor: norm(actorInput.value),
       targetId: norm(targetIDInput.value),
@@ -469,16 +488,24 @@ function renderFiltersTabPanel(opts: FiltersPanelOptions): HTMLElement {
       nlpExplanation: undefined,
       nlpUnsupported: undefined,
     })
+    onApplied?.()
   })
 
   const addBtnRow = h('div', { class: 'audit-trail-filter-actions' }, addBtn)
 
   // ---- inline metadata / changed-field builder ----
-  const metaSection = renderMetadataFilterSection(value, distinct, onChange)
+  const metaSection = renderMetadataFilterSection(value, distinct, onChange, onApplied)
 
   const children: Node[] = [timePresets]
   if (customRow) children.push(customRow)
-  children.push(dropdownRow, textRow, addBtnRow, metaSection)
+  children.push(
+    dropdownRow,
+    textRowActor,
+    textRowTarget,
+    textRowOrigin,
+    addBtnRow,
+    metaSection,
+  )
 
   return h('div', { class: 'audit-trail-filter-tab-panel' }, ...children)
 }
@@ -545,6 +572,7 @@ function renderMetadataFilterSection(
   value: FilterValues,
   distinct: DistinctValues,
   onChange: (next: FilterValues) => void,
+  onApplied?: () => void,
 ): HTMLElement {
   let variant: AddFilterVariant = 'metadata'
 
@@ -752,6 +780,7 @@ function renderMetadataFilterSection(
       nlpExplanation: undefined,
       nlpUnsupported: undefined,
     })
+    onApplied?.()
   })
 
   refresh()

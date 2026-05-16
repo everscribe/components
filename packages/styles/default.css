@@ -361,6 +361,14 @@
   min-width: 200px;
 }
 
+/* Free-text filters that live alone on their own row (Target ID,
+ * Origin IP). Grow to fill the row width so they don't look stunted
+ * next to the wider select dropdowns above. */
+.audit-trail-filter-wide-input {
+  flex: 1 1 auto;
+  width: 100%;
+}
+
 /* On mobile, stack each select/input in the filter rows so they each
  * occupy a full row. The default flex layout would otherwise crowd
  * them edge-to-edge with little touch target. */

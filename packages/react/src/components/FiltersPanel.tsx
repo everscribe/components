@@ -41,6 +41,10 @@ export interface FiltersPanelProps {
   token: string | null
   tokenEndpoint?: string
   onTokenExpired?: () => Promise<string>
+  // Fired when the user commits a Filters-tab action ("Add filters",
+  // "Add filter"). AuditTrail uses this to roll the panel up so the
+  // newly applied filters and resulting table are immediately visible.
+  onApplied?: () => void
 }
 
 const TIME_PRESETS: ReadonlyArray<{ key: TimeRangePreset; label: string }> = [
@@ -71,6 +75,7 @@ export function FiltersPanel({
   token,
   tokenEndpoint,
   onTokenExpired,
+  onApplied,
 }: FiltersPanelProps) {
   const allowNLP = !!claims?.allow_nlp
   const allowDSL = !!claims?.allow_dsl_input
@@ -126,7 +131,12 @@ export function FiltersPanel({
         />
       )}
       {activeTab === 'filters' && (
-        <FiltersTabPanel value={value} onChange={onChange} distinct={distinct} />
+        <FiltersTabPanel
+          value={value}
+          onChange={onChange}
+          distinct={distinct}
+          onApplied={onApplied}
+        />
       )}
       {activeTab === 'query' && allowDSL && (
         <QueryTabPanel value={value} onChange={onChange} />
@@ -280,9 +290,10 @@ interface FiltersTabProps {
   value: FilterValues
   onChange: (next: FilterValues) => void
   distinct: DistinctValues
+  onApplied?: () => void
 }
 
-function FiltersTabPanel({ value, onChange, distinct }: FiltersTabProps) {
+function FiltersTabPanel({ value, onChange, distinct, onApplied }: FiltersTabProps) {
   // Local draft state for every column filter. Nothing commits until
   // the user clicks "Add filters" — mirroring the dashboard's
   // explicit-submit UX. Time-range presets are the one exception:
@@ -292,6 +303,7 @@ function FiltersTabPanel({ value, onChange, distinct }: FiltersTabProps) {
   const [draftBefore, setDraftBefore] = useState(value.before ?? '')
   const [draftAction, setDraftAction] = useState(value.action ?? '')
   const [draftActorType, setDraftActorType] = useState(value.actorType ?? '')
+  const [draftTenantID, setDraftTenantID] = useState(value.tenantId ?? '')
   const [draftTargetType, setDraftTargetType] = useState(value.targetType ?? '')
   const [draftResultStatus, setDraftResultStatus] = useState(value.resultStatus ?? '')
   const [draftActor, setDraftActor] = useState(value.actor ?? '')
@@ -305,6 +317,7 @@ function FiltersTabPanel({ value, onChange, distinct }: FiltersTabProps) {
     setDraftBefore(value.before ?? '')
     setDraftAction(value.action ?? '')
     setDraftActorType(value.actorType ?? '')
+    setDraftTenantID(value.tenantId ?? '')
     setDraftTargetType(value.targetType ?? '')
     setDraftResultStatus(value.resultStatus ?? '')
     setDraftActor(value.actor ?? '')
@@ -315,6 +328,7 @@ function FiltersTabPanel({ value, onChange, distinct }: FiltersTabProps) {
     value.before,
     value.action,
     value.actorType,
+    value.tenantId,
     value.targetType,
     value.resultStatus,
     value.actor,
@@ -329,6 +343,7 @@ function FiltersTabPanel({ value, onChange, distinct }: FiltersTabProps) {
   const dirty =
     norm(draftAction) !== value.action ||
     norm(draftActorType) !== value.actorType ||
+    norm(draftTenantID) !== value.tenantId ||
     norm(draftTargetType) !== value.targetType ||
     norm(draftResultStatus) !== value.resultStatus ||
     norm(draftActor) !== value.actor ||
@@ -346,6 +361,7 @@ function FiltersTabPanel({ value, onChange, distinct }: FiltersTabProps) {
       ...value,
       action: norm(draftAction),
       actorType: norm(draftActorType),
+      tenantId: norm(draftTenantID),
       targetType: norm(draftTargetType),
       resultStatus: norm(draftResultStatus),
       actor: norm(draftActor),
@@ -358,6 +374,7 @@ function FiltersTabPanel({ value, onChange, distinct }: FiltersTabProps) {
       nlpExplanation: undefined,
       nlpUnsupported: undefined,
     })
+    onApplied?.()
   }
 
   const handlePresetClick = (range: TimeRangePreset) => {
@@ -461,6 +478,22 @@ function FiltersTabPanel({ value, onChange, distinct }: FiltersTabProps) {
           ))}
         </select>
 
+        {distinct.tenants.length > 0 && (
+          <select
+            className="audit-trail-filter-select"
+            aria-label="Tenant"
+            value={draftTenantID}
+            onChange={(e) => setDraftTenantID(e.target.value)}
+          >
+            <option value="">All tenants</option>
+            {distinct.tenants.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        )}
+
         {distinct.resultStatuses.length > 0 && (
           <select
             className="audit-trail-filter-select"
@@ -478,6 +511,9 @@ function FiltersTabPanel({ value, onChange, distinct }: FiltersTabProps) {
         )}
       </div>
 
+      {/* Free-text filters each on their own row — three inputs side-
+          by-side wrapped awkwardly on narrow embed widths. Stacked
+          they breathe and read naturally. */}
       <div className="audit-trail-filter-row">
         <input
           type="text"
@@ -486,16 +522,20 @@ function FiltersTabPanel({ value, onChange, distinct }: FiltersTabProps) {
           value={draftActor}
           onChange={(e) => setDraftActor(e.target.value)}
         />
+      </div>
+      <div className="audit-trail-filter-row">
         <input
           type="text"
-          className="audit-trail-filter-input"
+          className="audit-trail-filter-input audit-trail-filter-wide-input"
           placeholder="Target ID"
           value={draftTargetID}
           onChange={(e) => setDraftTargetID(e.target.value)}
         />
+      </div>
+      <div className="audit-trail-filter-row">
         <input
           type="text"
-          className="audit-trail-filter-input"
+          className="audit-trail-filter-input audit-trail-filter-wide-input"
           placeholder="Origin IP"
           value={draftOriginIP}
           onChange={(e) => setDraftOriginIP(e.target.value)}
@@ -517,6 +557,7 @@ function FiltersTabPanel({ value, onChange, distinct }: FiltersTabProps) {
         value={value}
         onChange={onChange}
         distinct={distinct}
+        onApplied={onApplied}
       />
     </div>
   )
@@ -545,12 +586,14 @@ interface MetadataFilterSectionProps {
   value: FilterValues
   onChange: (next: FilterValues) => void
   distinct: DistinctValues
+  onApplied?: () => void
 }
 
 function MetadataFilterSection({
   value,
   onChange,
   distinct,
+  onApplied,
 }: MetadataFilterSectionProps) {
   const [variant, setVariant] = useState<AddFilterVariant>('metadata')
   const [mdKey, setMdKey] = useState('')
@@ -594,6 +637,7 @@ function MetadataFilterSection({
       nlpExplanation: undefined,
       nlpUnsupported: undefined,
     })
+    onApplied?.()
   }
 
   return (

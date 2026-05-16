@@ -178,6 +178,13 @@ export async function listDistinctTargetTypes(
   return request<DistinctTargetTypesResponse>(url, opts)
 }
 
+export async function listDistinctTenants(
+  opts: RequestOptions,
+): Promise<DistinctTenantsResponse> {
+  const url = new URL(joinUrl(opts.apiBase, 'events/tenants'))
+  return request<DistinctTenantsResponse>(url, opts)
+}
+
 export async function listDistinctResultStatuses(
   opts: RequestOptions,
 ): Promise<DistinctResultStatusesResponse> {

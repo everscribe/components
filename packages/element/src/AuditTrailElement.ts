@@ -88,6 +88,7 @@ export class AuditTrailElement extends HTMLElement {
     actions: [],
     actorTypes: [],
     targetTypes: [],
+    tenants: [],
     resultStatuses: [],
     metadataKeys: [],
     changeFields: [],
@@ -316,6 +317,7 @@ export class AuditTrailElement extends HTMLElement {
       actions: [],
       actorTypes: [],
       targetTypes: [],
+      tenants: [],
       resultStatuses: [],
       metadataKeys: [],
       changeFields: [],
@@ -590,6 +592,10 @@ export class AuditTrailElement extends HTMLElement {
           onTabChange: (next) => this.setActiveTab(next),
           onChange: (next) => this.setFilters(next),
           onNLPSubmit: (q) => this.submitNLP(q),
+          onApplied: () => {
+            this.filtersOpen = false
+            this.render()
+          },
         }),
       )
     }
