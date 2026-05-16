@@ -96,7 +96,7 @@ export function FiltersPanel({
             className={tabClass(activeTab === 'ai')}
             onClick={() => setActiveTab('ai')}
           >
-            AI
+            Prompt
           </button>
         )}
         <button

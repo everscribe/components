@@ -6,6 +6,7 @@ import {
   createEventsStore,
   exportEvents,
   fetchTokenViaOpts,
+  generateNLPFilters,
   parseClaims,
   type DistinctValues,
   type DistinctValuesStore,
@@ -21,9 +22,15 @@ import { openEventDetail } from './eventDetail.js'
 import { openExportModal } from './exportModal.js'
 import {
   countActiveColumnFilters,
+  parseQClauses,
+  pickInitialTab,
+  renderFilterChips,
   renderFiltersPanel,
   resolveTimeBounds,
+  type FilterTab,
   type FilterValues,
+  type NLPState,
+  type NLPErrorReason,
   type TimeRangePreset,
 } from './filters.js'
 import { renderTable } from './table.js'
@@ -39,10 +46,6 @@ const DEFAULT_VISIBLE_COLUMNS = [
   'tenant_id',
   'result',
 ]
-// Debounce window for the free-text actor input and the custom-range
-// datetime inputs. Long enough to absorb continuous typing, short
-// enough to feel responsive.
-const TEXT_DEBOUNCE_MS = 300
 
 export type Theme = 'light' | 'dark'
 export type DefaultTimeRange = '24h' | '7d' | '30d' | 'all'
@@ -93,6 +96,9 @@ export class AuditTrailElement extends HTMLElement {
   // UI state.
   private filters: FilterValues = { range: 'all' }
   private filtersOpen = false
+  private activeTab: FilterTab = 'filters'
+  private nlpState: NLPState = { phase: 'idle' }
+  private nlpAbort: AbortController | null = null
   private visibleSet: Set<string> = new Set(DEFAULT_VISIBLE_COLUMNS)
 
   // Slot tracking for partial re-renders. bodySlot wraps the table /
@@ -100,13 +106,6 @@ export class AuditTrailElement extends HTMLElement {
   // table region without touching the toolbar (which would clobber
   // open <details> picker state) or filter inputs (focus + drafts).
   private bodySlot: HTMLElement | null = null
-
-  // Held across re-renders so the debounced commit can read the
-  // current input values at fire time.
-  private actorInput: HTMLInputElement | null = null
-  private sinceInput: HTMLInputElement | null = null
-  private beforeInput: HTMLInputElement | null = null
-  private debounceTimer: ReturnType<typeof setTimeout> | null = null
 
   // Modal cleanup hooks. Set when a modal is open; null otherwise.
   private detailDispose: (() => void) | null = null
@@ -229,6 +228,10 @@ export class AuditTrailElement extends HTMLElement {
     } else {
       this.visibleSet = new Set(DEFAULT_VISIBLE_COLUMNS)
     }
+    // Active tab is claim-driven: Prompt when allow_nlp is true,
+    // otherwise Filters. Picked once on bootstrap; users can switch
+    // freely after that.
+    this.activeTab = pickInitialTab(this.filters, claims)
     this.startEventsStore(token)
     this.startDistinctStore(token)
     this.render()
@@ -255,7 +258,12 @@ export class AuditTrailElement extends HTMLElement {
       action: this.filters.action,
       actor: this.filters.actor,
       actorType: this.filters.actorType,
+      tenantId: this.filters.tenantId,
       targetType: this.filters.targetType,
+      targetId: this.filters.targetId,
+      resultStatus: this.filters.resultStatus,
+      originIP: this.filters.originIP,
+      q: this.filters.q,
     })
     this.eventsStore = events
     this.eventsState = events.getSnapshot()
@@ -317,10 +325,8 @@ export class AuditTrailElement extends HTMLElement {
   private cleanup() {
     this.bootstrapAbort?.abort()
     this.bootstrapAbort = null
-    if (this.debounceTimer) {
-      clearTimeout(this.debounceTimer)
-      this.debounceTimer = null
-    }
+    this.nlpAbort?.abort()
+    this.nlpAbort = null
     this.disposeModals()
     this.cleanupStores()
   }
@@ -366,7 +372,12 @@ export class AuditTrailElement extends HTMLElement {
       action: this.filters.action,
       actor: this.filters.actor,
       actorType: this.filters.actorType,
+      tenantId: this.filters.tenantId,
       targetType: this.filters.targetType,
+      targetId: this.filters.targetId,
+      resultStatus: this.filters.resultStatus,
+      originIP: this.filters.originIP,
+      q: this.filters.q,
     }
     const run = (token: string) => exportEvents({ apiBase, token, params })
 
@@ -426,47 +437,90 @@ export class AuditTrailElement extends HTMLElement {
     this.restartEventsStore()
   }
 
-  private scheduleDebouncedCommit() {
-    if (this.debounceTimer) clearTimeout(this.debounceTimer)
-    this.debounceTimer = setTimeout(() => {
-      this.debounceTimer = null
-      this.commitDebouncedDrafts()
-    }, TEXT_DEBOUNCE_MS)
+  private setActiveTab(next: FilterTab) {
+    if (this.activeTab === next) return
+    this.activeTab = next
+    // Switching tabs doesn't fire a fetch; only the explicit Add /
+    // Search buttons mutate filters.
+    this.render()
   }
 
-  // commitDebouncedDrafts reads the actor + custom-range inputs
-  // straight from the DOM and re-runs the events store with the new
-  // values. We deliberately skip the full render here — the inputs
-  // already show the user's typed value, and re-rendering would
-  // pull focus mid-type.
-  private commitDebouncedDrafts() {
-    const actorRaw = this.actorInput?.value ?? ''
-    const sinceRaw = this.sinceInput?.value ?? ''
-    const beforeRaw = this.beforeInput?.value ?? ''
+  // submitNLP fires the LLM round-trip via the embed NLP endpoint.
+  // Updates nlpState immediately for the spinner, then folds the
+  // result into filters on success or surfaces an error on failure.
+  private submitNLP(query: string) {
+    if (this.bootstrap.phase !== 'ready') return
+    const trimmed = query.trim()
+    if (!trimmed) return
+    const apiBase = this.apiBaseAttr()
+    const token = this.bootstrap.token
 
-    const next: FilterValues = { ...this.filters }
-    let changed = false
+    this.nlpAbort?.abort()
+    const ctrl = new AbortController()
+    this.nlpAbort = ctrl
+    this.nlpState = { phase: 'loading' }
+    this.render()
 
-    const newActor = actorRaw || undefined
-    if (newActor !== this.filters.actor) {
-      next.actor = newActor
-      changed = true
-    }
-    if (this.filters.range === 'custom') {
-      const newSince = sinceRaw || undefined
-      const newBefore = beforeRaw || undefined
-      if (newSince !== this.filters.since) {
-        next.since = newSince
-        changed = true
+    void (async () => {
+      try {
+        const result = await generateNLPFilters({
+          apiBase,
+          token,
+          query: trimmed,
+          signal: ctrl.signal,
+        })
+        if (ctrl.signal.aborted) return
+        this.nlpState = { phase: 'idle' }
+        this.filters = {
+          ...this.filters,
+          q: result.dsl || undefined,
+          nlpQ: trimmed,
+          nlpExplanation: result.explanation,
+          nlpUnsupported: result.unsupported,
+        }
+        this.render()
+        this.restartEventsStore()
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        // Try a token refresh on 401 once, then surface the error.
+        if (err instanceof EmbedError && err.kind === 'unauthorized') {
+          const refreshed = await fetchTokenViaOpts({
+            tokenEndpoint: this.getAttribute('token-endpoint') ?? undefined,
+            onTokenExpired: this.onTokenExpired,
+          })
+          if (refreshed && !ctrl.signal.aborted) {
+            try {
+              const retry = await generateNLPFilters({
+                apiBase,
+                token: refreshed,
+                query: trimmed,
+                signal: ctrl.signal,
+              })
+              this.nlpState = { phase: 'idle' }
+              this.filters = {
+                ...this.filters,
+                q: retry.dsl || undefined,
+                nlpQ: trimmed,
+                nlpExplanation: retry.explanation,
+                nlpUnsupported: retry.unsupported,
+              }
+              this.render()
+              this.restartEventsStore()
+              return
+            } catch (retryErr) {
+              this.nlpState = {
+                phase: 'error',
+                reason: classifyNLPError(retryErr),
+              }
+              this.render()
+              return
+            }
+          }
+        }
+        this.nlpState = { phase: 'error', reason: classifyNLPError(err) }
+        this.render()
       }
-      if (newBefore !== this.filters.before) {
-        next.before = newBefore
-        changed = true
-      }
-    }
-    if (!changed) return
-    this.filters = next
-    this.restartEventsStore()
+    })()
   }
 
   // ---- rendering ----
@@ -475,9 +529,6 @@ export class AuditTrailElement extends HTMLElement {
     // Full rebuild. Slot refs are cleared so renderBody is a no-op
     // until the next render assigns them.
     this.bodySlot = null
-    this.actorInput = null
-    this.sinceInput = null
-    this.beforeInput = null
     this.replaceChildren(...this.renderChildren())
   }
 
@@ -518,23 +569,27 @@ export class AuditTrailElement extends HTMLElement {
     }
 
     const out: Node[] = [this.renderToolbar()]
+
+    // Active-filter chips sit between the toolbar and the panel —
+    // visible whenever there's at least one active filter, even
+    // when the panel is collapsed.
+    const chips = renderFilterChips({
+      value: this.filters,
+      onChange: (next) => this.setFilters(next),
+    })
+    if (chips) out.push(chips)
+
     if (this.filtersOpen) {
       out.push(
         renderFiltersPanel({
           value: this.filters,
           distinct: this.distinctValues,
+          claims: this.bootstrap.claims,
+          activeTab: this.activeTab,
+          nlpState: this.nlpState,
+          onTabChange: (next) => this.setActiveTab(next),
           onChange: (next) => this.setFilters(next),
-          onActorInput: () => this.scheduleDebouncedCommit(),
-          onCustomRangeInput: () => this.scheduleDebouncedCommit(),
-          setActorInput: (el) => {
-            this.actorInput = el
-          },
-          setSinceInput: (el) => {
-            this.sinceInput = el
-          },
-          setBeforeInput: (el) => {
-            this.beforeInput = el
-          },
+          onNLPSubmit: (q) => this.submitNLP(q),
         }),
       )
     }
@@ -580,7 +635,9 @@ export class AuditTrailElement extends HTMLElement {
   }
 
   private renderFiltersToggle(): HTMLElement {
-    const activeCount = countActiveColumnFilters(this.filters)
+    const activeCount =
+      countActiveColumnFilters(this.filters) +
+      (this.filters.q ? parseQClauses(this.filters.q).length : 0)
     const children: Node[] = [document.createTextNode('Search options')]
     if (activeCount > 0) {
       children.push(
@@ -699,6 +756,22 @@ function triggerBrowserDownload(blob: Blob, filename: string) {
   a.click()
   document.body.removeChild(a)
   setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
+// classifyNLPError folds an EmbedError into the small set of reasons
+// the Prompt tab actually distinguishes. 403 + "nlp_not_allowed"
+// message is the AllowNLP claim refusal; everything else falls
+// through to generic buckets.
+function classifyNLPError(err: unknown): NLPErrorReason {
+  if (!(err instanceof EmbedError)) return 'unknown'
+  if (err.status === 503) {
+    if (err.message?.includes('busy')) return 'provider_busy'
+    return 'not_configured'
+  }
+  if (err.status === 429) return 'rate_limited'
+  if (err.status === 403) return 'not_allowed'
+  if (err.kind === 'bad_request') return 'bad_request'
+  return 'unknown'
 }
 
 function exportErrorMessage(err: EmbedError): string {

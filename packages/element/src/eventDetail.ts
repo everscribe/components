@@ -16,7 +16,7 @@ export interface EventDetailOptions {
   onClose: () => void
 }
 
-type Tab = 'raw' | 'diff'
+type Tab = 'raw' | 'diff' | 'metadata'
 
 const COPY_ICON_SVG =
   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
@@ -44,6 +44,9 @@ export function openEventDetail(opts: EventDetailOptions): () => void {
   const showDiff = hasParseableDiff(event.change)
   const diff = showDiff ? renderDiff(event.change) : { lines: [] }
   const rawJson = JSON.stringify(event, null, 2)
+  const highlightedJson = highlightJSON(rawJson)
+  const metadataRows = buildMetadataRows(event.metadata)
+  const showMetadata = metadataRows.length > 0
 
   // The portal wrapper carries the theme class so CSS variables
   // resolve outside `.audit-trail-root`.
@@ -76,11 +79,20 @@ export function openEventDetail(opts: EventDetailOptions): () => void {
         renderDiffTable(diff.lines),
       )
     }
-    // Default to Raw.
+    if (tab === 'metadata' && showMetadata) {
+      return h(
+        'div',
+        { class: 'audit-trail-inspect-panel' },
+        renderMetadataTable(metadataRows),
+      )
+    }
+    // Default to Raw. highlightedJson carries pre-escaped HTML
+    // with token <span>s — set via the `html` attribute so the
+    // browser interprets the tags rather than text-escaping them.
     const codeBlock = h(
       'pre',
       { class: 'audit-trail-code-block' },
-      h('code', null, rawJson),
+      h('code', { html: highlightedJson }),
     )
     const copyBtn = h(
       'button',
@@ -131,12 +143,15 @@ export function openEventDetail(opts: EventDetailOptions): () => void {
     h('code', null, event.id),
   )
 
-  const tabs = showDiff ? renderTabs(tab, (next) => {
-    tab = next
-    // Toggle visual state on the buttons; rebuild the panel.
-    setSelectedTab(tabsEl, next)
-    renderPanel()
-  }) : null
+  const tabs =
+    showDiff || showMetadata
+      ? renderTabs(tab, showDiff, showMetadata, (next) => {
+          tab = next
+          // Toggle visual state on the buttons; rebuild the panel.
+          setSelectedTab(tabsEl, next)
+          renderPanel()
+        })
+      : null
   const tabsEl: HTMLElement | null = tabs
 
   const modalChildren: Node[] = [
@@ -203,42 +218,37 @@ export function openEventDetail(opts: EventDetailOptions): () => void {
   return dispose
 }
 
-function renderTabs(initial: Tab, onSelect: (tab: Tab) => void): HTMLElement {
-  const rawBtn = h(
-    'button',
-    {
-      type: 'button',
-      role: 'tab',
-      class:
-        initial === 'raw'
-          ? 'audit-trail-inspect-tab audit-trail-inspect-tab-active'
-          : 'audit-trail-inspect-tab',
-      'aria-selected': initial === 'raw' ? 'true' : 'false',
-      'data-tab': 'raw',
-    },
-    'Raw',
-  )
-  const diffBtn = h(
-    'button',
-    {
-      type: 'button',
-      role: 'tab',
-      class:
-        initial === 'diff'
-          ? 'audit-trail-inspect-tab audit-trail-inspect-tab-active'
-          : 'audit-trail-inspect-tab',
-      'aria-selected': initial === 'diff' ? 'true' : 'false',
-      'data-tab': 'diff',
-    },
-    'Diff',
-  )
-  rawBtn.addEventListener('click', () => onSelect('raw'))
-  diffBtn.addEventListener('click', () => onSelect('diff'))
+function renderTabs(
+  initial: Tab,
+  showDiff: boolean,
+  showMetadata: boolean,
+  onSelect: (tab: Tab) => void,
+): HTMLElement {
+  const make = (key: Tab, label: string) => {
+    const btn = h(
+      'button',
+      {
+        type: 'button',
+        role: 'tab',
+        class:
+          initial === key
+            ? 'audit-trail-inspect-tab audit-trail-inspect-tab-active'
+            : 'audit-trail-inspect-tab',
+        'aria-selected': initial === key ? 'true' : 'false',
+        'data-tab': key,
+      },
+      label,
+    )
+    btn.addEventListener('click', () => onSelect(key))
+    return btn
+  }
+  const tabs: HTMLElement[] = [make('raw', 'Raw')]
+  if (showDiff) tabs.push(make('diff', 'Diff'))
+  if (showMetadata) tabs.push(make('metadata', 'Metadata'))
   return h(
     'div',
     { class: 'audit-trail-inspect-tabs', role: 'tablist', 'aria-label': 'View' },
-    rawBtn,
-    diffBtn,
+    ...tabs,
   )
 }
 
@@ -313,3 +323,116 @@ const MONTHS = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ]
+
+// ============================================================
+// JSON syntax highlighter for the Raw tab. Walks the pretty-
+// printed source, escapes HTML, and wraps tokens in <span>
+// classes the CSS colors. Punctuation (braces, commas, colons)
+// keeps the default text color.
+// ============================================================
+
+function highlightJSON(json: string): string {
+  const safe = escapeHTML(json)
+  return safe.replace(
+    /("(?:\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(?:\s*:)?|\b(?:true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+    (match) => {
+      let cls = 'audit-trail-json-num'
+      if (match.startsWith('"')) {
+        cls = /:$/.test(match)
+          ? 'audit-trail-json-key'
+          : 'audit-trail-json-str'
+      } else if (/true|false/.test(match)) {
+        cls = 'audit-trail-json-bool'
+      } else if (/null/.test(match)) {
+        cls = 'audit-trail-json-null'
+      }
+      return `<span class="${cls}">${match}</span>`
+    },
+  )
+}
+
+function escapeHTML(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+// ============================================================
+// Metadata tab — flat key/value table. Renders each top-level
+// metadata field as one row with type hint + value. Nested
+// objects / arrays render compactly so the column doesn't blow
+// out; users still get the full picture from the Raw tab.
+// ============================================================
+
+interface MetadataRow {
+  key: string
+  value: string
+  type: string
+}
+
+function buildMetadataRows(
+  metadata: Record<string, unknown> | undefined,
+): MetadataRow[] {
+  if (!metadata) return []
+  const keys = Object.keys(metadata)
+  if (keys.length === 0) return []
+  keys.sort()
+  return keys.map((k) => {
+    const raw = metadata[k]
+    return { key: k, value: renderMetadataValue(raw), type: classifyValue(raw) }
+  })
+}
+
+function renderMetadataValue(v: unknown): string {
+  if (v === null || v === undefined) return ''
+  if (typeof v === 'string') return v
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v)
+  try {
+    return JSON.stringify(v)
+  } catch {
+    return String(v)
+  }
+}
+
+function classifyValue(v: unknown): string {
+  if (v === null) return 'null'
+  if (Array.isArray(v)) return 'array'
+  if (typeof v === 'object') return 'object'
+  return typeof v
+}
+
+function renderMetadataTable(rows: MetadataRow[]): HTMLElement {
+  return h(
+    'table',
+    { class: 'audit-trail-metadata-kv-table' },
+    h(
+      'thead',
+      null,
+      h(
+        'tr',
+        null,
+        h('th', { class: 'audit-trail-md-col-key' }, 'Key'),
+        h('th', { class: 'audit-trail-md-col-type' }, 'Type'),
+        h('th', { class: 'audit-trail-md-col-value' }, 'Value'),
+      ),
+    ),
+    h(
+      'tbody',
+      null,
+      ...rows.map((r) =>
+        h(
+          'tr',
+          null,
+          h('td', { class: 'audit-trail-md-col-key' }, h('code', null, r.key)),
+          h(
+            'td',
+            { class: 'audit-trail-md-col-type' },
+            h('span', { class: 'audit-trail-muted' }, r.type),
+          ),
+          h('td', { class: 'audit-trail-md-col-value' }, h('code', null, r.value)),
+        ),
+      ),
+    ),
+  )
+}
