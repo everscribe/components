@@ -9,26 +9,28 @@ export interface EventTableProps {
 
 export function EventTable({ events, visibleColumns, onRowClick }: EventTableProps) {
   return (
-    <table className="audit-trail-table">
-      <thead>
-        <tr>
-          {visibleColumns.map((col) => (
-            <th key={col} scope="col" className={`audit-trail-th audit-trail-th-${col}`}>
-              {COLUMN_LABELS[col] ?? col}
-            </th>
+    <div className="audit-trail-table-wrap">
+      <table className="audit-trail-table">
+        <thead>
+          <tr>
+            {visibleColumns.map((col) => (
+              <th key={col} scope="col" className={`audit-trail-th audit-trail-th-${col}`}>
+                {COLUMN_LABELS[col] ?? col}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {events.map((event) => (
+            <EventRow
+              key={event.id}
+              event={event}
+              columns={visibleColumns}
+              onClick={onRowClick}
+            />
           ))}
-        </tr>
-      </thead>
-      <tbody>
-        {events.map((event) => (
-          <EventRow
-            key={event.id}
-            event={event}
-            columns={visibleColumns}
-            onClick={onRowClick}
-          />
-        ))}
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
   )
 }

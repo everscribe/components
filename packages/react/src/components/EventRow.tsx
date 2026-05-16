@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { Event } from '@everscribe/components-core'
+import { COLUMN_LABELS, type Event } from '@everscribe/components-core'
 
 export interface EventRowProps {
   event: Event
@@ -35,7 +35,11 @@ export function EventRow({ event, columns, onClick }: EventRowProps) {
       }
     >
       {columns.map((col) => (
-        <td key={col} className={`audit-trail-cell audit-trail-cell-${col}`}>
+        <td
+          key={col}
+          className={`audit-trail-cell audit-trail-cell-${col}`}
+          data-label={COLUMN_LABELS[col] ?? col}
+        >
           {renderCell(col, event)}
         </td>
       ))}

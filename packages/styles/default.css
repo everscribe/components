@@ -103,6 +103,28 @@
   flex: 1 1 auto;
 }
 
+/* On mobile, the toolbar stacks: Live on its own row, then each
+ * action button full-width. The spacer is unnecessary in column
+ * layout. */
+@media (max-width: 600px) {
+  .audit-trail-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .audit-trail-toolbar-spacer {
+    display: none;
+  }
+
+  .audit-trail-toolbar > .audit-trail-filter-toggle,
+  .audit-trail-toolbar > .audit-trail-button,
+  .audit-trail-toolbar > .audit-trail-picker,
+  .audit-trail-toolbar > .audit-trail-picker > .audit-trail-picker-summary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* ---- Live indicator ---- */
 .audit-trail-live {
   display: inline-flex;
@@ -144,12 +166,12 @@
   gap: var(--audit-trail-spacing-xs);
   cursor: pointer;
   list-style: none;
-  padding: var(--audit-trail-spacing-xs) var(--audit-trail-spacing-sm);
+  padding: var(--audit-trail-spacing-xs) var(--audit-trail-spacing);
   border: 1px solid var(--audit-trail-border);
   border-radius: var(--audit-trail-radius-sm);
   background: var(--audit-trail-surface);
   color: var(--audit-trail-fg);
-  font-size: var(--audit-trail-font-size-sm);
+  font: inherit;
   user-select: none;
 }
 
@@ -215,13 +237,12 @@
   display: inline-flex;
   align-items: center;
   gap: var(--audit-trail-spacing-xs);
-  padding: var(--audit-trail-spacing-xs) var(--audit-trail-spacing-sm);
+  padding: var(--audit-trail-spacing-xs) var(--audit-trail-spacing);
   border: 1px solid var(--audit-trail-border);
   border-radius: var(--audit-trail-radius-sm);
   background: var(--audit-trail-surface);
   color: var(--audit-trail-fg);
   font: inherit;
-  font-size: var(--audit-trail-font-size-sm);
   cursor: pointer;
 }
 
@@ -338,6 +359,28 @@
 .audit-trail-filter-actor-input {
   flex: 1 1 auto;
   min-width: 200px;
+}
+
+/* On mobile, stack each select/input in the filter rows so they each
+ * occupy a full row. The default flex layout would otherwise crowd
+ * them edge-to-edge with little touch target. */
+@media (max-width: 600px) {
+  .audit-trail-filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .audit-trail-filter-row > * {
+    width: 100%;
+  }
+
+  .audit-trail-filter-actor-input {
+    min-width: 0;
+  }
+
+  .audit-trail-filter-field {
+    display: flex;
+  }
 }
 
 .audit-trail-filter-select {
@@ -509,6 +552,73 @@
 }
 
 /* ---- Table ---- */
+.audit-trail-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* On mobile, swap the table for a card list. Each <tr> becomes a card
+ * and each <td> renders its column label via ::before (sourced from
+ * the data-label attribute the row emits). The wrap stops being a
+ * scroll container because cards fit the viewport naturally. */
+@media (max-width: 600px) {
+  .audit-trail-table-wrap {
+    overflow-x: visible;
+  }
+
+  .audit-trail-table,
+  .audit-trail-table thead,
+  .audit-trail-table tbody,
+  .audit-trail-table tr,
+  .audit-trail-table td {
+    display: block;
+  }
+
+  .audit-trail-table {
+    border: none;
+    background: transparent;
+  }
+
+  .audit-trail-table thead {
+    display: none;
+  }
+
+  .audit-trail-table tr {
+    margin-bottom: var(--audit-trail-spacing-sm);
+    padding: var(--audit-trail-spacing);
+    border: 1px solid var(--audit-trail-border);
+    border-radius: var(--audit-trail-radius);
+    background: var(--audit-trail-bg);
+  }
+
+  .audit-trail-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .audit-trail-table td {
+    padding: var(--audit-trail-spacing-xs) 0;
+    border-bottom: none;
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .audit-trail-table td::before {
+    content: attr(data-label) ': ';
+    color: var(--audit-trail-fg-muted);
+    font-family: var(--audit-trail-font-family);
+    margin-right: var(--audit-trail-spacing-xs);
+  }
+
+  /* Cells whose renderer produced no value would otherwise show as a
+   * stray "Label:" line. Drop them entirely. */
+  .audit-trail-table td:empty {
+    display: none;
+  }
+}
+
 .audit-trail-table {
   width: 100%;
   border-collapse: collapse;

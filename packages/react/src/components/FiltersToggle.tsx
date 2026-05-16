@@ -12,7 +12,7 @@ export function FiltersToggle({ open, onOpenChange, activeCount }: FiltersToggle
       aria-expanded={open}
       onClick={() => onOpenChange(!open)}
     >
-      Search options
+      Search
       {activeCount > 0 && (
         <span className="audit-trail-filter-toggle-badge">{activeCount}</span>
       )}

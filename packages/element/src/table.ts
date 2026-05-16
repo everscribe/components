@@ -25,10 +25,14 @@ export function renderTable(
   )
   const rows = events.map((event) => renderRow(event, columns, onRowClick))
   return h(
-    'table',
-    { class: 'audit-trail-table' },
-    h('thead', null, h('tr', null, ...headerCells)),
-    h('tbody', null, ...rows),
+    'div',
+    { class: 'audit-trail-table-wrap' },
+    h(
+      'table',
+      { class: 'audit-trail-table' },
+      h('thead', null, h('tr', null, ...headerCells)),
+      h('tbody', null, ...rows),
+    ),
   )
 }
 
@@ -39,7 +43,14 @@ function renderRow(
 ): HTMLElement {
   const interactive = Boolean(onClick)
   const cells = columns.map((col) =>
-    h('td', { class: `audit-trail-cell audit-trail-cell-${col}` }, renderCell(col, event)),
+    h(
+      'td',
+      {
+        class: `audit-trail-cell audit-trail-cell-${col}`,
+        'data-label': COLUMN_LABELS[col] ?? col,
+      },
+      renderCell(col, event),
+    ),
   )
   const tr = h(
     'tr',

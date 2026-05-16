@@ -638,7 +638,7 @@ export class AuditTrailElement extends HTMLElement {
     const activeCount =
       countActiveColumnFilters(this.filters) +
       (this.filters.q ? parseQClauses(this.filters.q).length : 0)
-    const children: Node[] = [document.createTextNode('Search options')]
+    const children: Node[] = [document.createTextNode('Search')]
     if (activeCount > 0) {
       children.push(
         h('span', { class: 'audit-trail-filter-toggle-badge' }, String(activeCount)),
