@@ -70,9 +70,23 @@ At least one of `token`, `tokenEndpoint`, or `onTokenExpired` is required.
 | `style` | `CSSProperties` | — | Inline style on the root. Use to override CSS variables at runtime. |
 | `onError` | `(err: Error) => void` | — | Observability hook for fetch errors. |
 
+## Persistence
+
+Column visibility and filter state are persisted to `localStorage` automatically and restored on mount. Two keys are written, both namespaced by the token's project ID (`sub` claim) and tenant ID (`tenant_id` claim, or `_` when unset):
+
+- `audit-trail:cols:{sub}:{tenant_id}` — the list of *hidden* columns. Stored as hidden (not visible) so future-added columns appear by default for returning users.
+- `audit-trail:filters:{sub}:{tenant_id}` — the active filter state (`FilterValues`): time range, column filters, free-text inputs, the active DSL query, and the last NLP echo fields.
+
+Behavior:
+- Restored once the token bootstrap resolves and the JWT is parsed, so the first request to `/events` reflects the user's last session.
+- Swapping the `token` prop to a different project re-restores from that project's storage; persistence picks up under the new key.
+- localStorage failures (private browsing, quota exceeded, malformed JSON) are silently swallowed — falls through to `defaultTimeRange` and empty filters.
+- Token claims that restrict columns (`columns` claim set) take precedence over restored hidden columns.
+- Storage keys are identical between this package and `@everscribe/components-element`, so a customer using both adapters under the same origin shares state cleanly.
+
 ## SSR / Next.js
 
-The component is marked `'use client'` — drop it into a Server Component tree as-is. The detail drawer mounts after hydration via a portal to `document.body`, so SSR output is unaffected.
+The component is marked `'use client'` — drop it into a Server Component tree as-is. The detail drawer mounts after hydration via a portal to `document.body`, so SSR output is unaffected. The persistence `useEffect`s only fire on the client after hydration, so they have no SSR side effects.
 
 ## License
 

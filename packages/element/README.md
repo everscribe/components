@@ -70,6 +70,19 @@ At least one of `token`, `token-endpoint`, or the JS-only `onTokenExpired` prope
 
 Style and class come from the standard `class` and `style` attributes. The element renders into its own light DOM, so the CSS in `@everscribe/components-styles/default.css` applies the same way it does for the React component.
 
+## Persistence
+
+Column visibility and filter state are persisted to `localStorage` automatically and restored on reload. Two keys are written, both namespaced by the token's project ID (`sub` claim) and tenant ID (`tenant_id` claim, or `_` when unset):
+
+- `audit-trail:cols:{sub}:{tenant_id}` — the list of *hidden* columns. Stored as hidden (not visible) so future-added columns appear by default for returning users.
+- `audit-trail:filters:{sub}:{tenant_id}` — the active filter state (`FilterValues`): time range, column filters, free-text actor/target/origin inputs, the active DSL query, and the last NLP echo fields.
+
+Behavior:
+- Restored after the bootstrap token fetch resolves, so the very first request to `/events` already reflects the user's last session.
+- localStorage failures (private browsing, quota exceeded, malformed JSON) are silently swallowed — the element falls through to the default-time-range attribute and empty filters.
+- Token claims that restrict columns (`columns` claim set) take precedence over restored hidden columns; the restored list can only narrow the claim-allowed set, never escape it.
+- Two `<audit-trail>` instances on the same page sharing the same `sub` + `tenant_id` will share persisted state. This is a degenerate case (the same view embedded twice) and generally desirable when it does happen.
+
 ## Properties (JS only)
 
 These can't be expressed as attributes; set them on the element directly via JS.

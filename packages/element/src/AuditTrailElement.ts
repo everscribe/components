@@ -181,6 +181,18 @@ export class AuditTrailElement extends HTMLElement {
     return 'all'
   }
 
+  // storageKey returns a localStorage key namespaced by the current
+  // token's project (sub) and tenant. Returns null when the element
+  // isn't ready or the token has no usable sub — callers treat null
+  // as "skip persistence."
+  private storageKey(suffix: 'cols' | 'filters'): string | null {
+    if (this.bootstrap.phase !== 'ready') return null
+    const sub = this.bootstrap.claims?.sub
+    if (!sub) return null
+    const tenant = this.bootstrap.claims?.tenant_id || '_'
+    return `audit-trail:${suffix}:${sub}:${tenant}`
+  }
+
   // ---- bootstrap ----
 
   private start() {
@@ -229,6 +241,12 @@ export class AuditTrailElement extends HTMLElement {
     } else {
       this.visibleSet = new Set(DEFAULT_VISIBLE_COLUMNS)
     }
+    // Layer per-project saved state on top. Columns are stored as the
+    // hidden list (not visible) so a future-added column appears by
+    // default for returning users. Filters restore the user's last
+    // search state across reloads.
+    this.restoreHiddenColumns()
+    this.restoreFilters()
     // Active tab is claim-driven: Prompt when allow_nlp is true,
     // otherwise Filters. Picked once on bootstrap; users can switch
     // freely after that.
@@ -428,13 +446,68 @@ export class AuditTrailElement extends HTMLElement {
   private toggleColumn(col: string) {
     if (this.visibleSet.has(col)) this.visibleSet.delete(col)
     else this.visibleSet.add(col)
+    this.persistHiddenColumns()
     this.render()
+  }
+
+  private restoreHiddenColumns() {
+    const key = this.storageKey('cols')
+    if (!key) return
+    try {
+      const raw = globalThis.localStorage?.getItem(key)
+      if (!raw) return
+      const hidden = JSON.parse(raw)
+      if (!Array.isArray(hidden)) return
+      for (const c of hidden) {
+        if (typeof c === 'string') this.visibleSet.delete(c)
+      }
+    } catch {
+      // Private mode, quota, or malformed JSON — fall through to defaults.
+    }
+  }
+
+  private persistHiddenColumns() {
+    const key = this.storageKey('cols')
+    if (!key) return
+    try {
+      const hidden = this.availableColumns.filter((c) => !this.visibleSet.has(c))
+      globalThis.localStorage?.setItem(key, JSON.stringify(hidden))
+    } catch {
+      // Private mode, quota — silently ignore.
+    }
+  }
+
+  private restoreFilters() {
+    const key = this.storageKey('filters')
+    if (!key) return
+    try {
+      const raw = globalThis.localStorage?.getItem(key)
+      if (!raw) return
+      const parsed = JSON.parse(raw)
+      if (!parsed || typeof parsed !== 'object') return
+      const range = (parsed as FilterValues).range
+      if (range !== '24h' && range !== '7d' && range !== '30d' && range !== 'custom' && range !== 'all') return
+      this.filters = parsed as FilterValues
+    } catch {
+      // Malformed JSON / storage error — keep defaults.
+    }
+  }
+
+  private persistFilters() {
+    const key = this.storageKey('filters')
+    if (!key) return
+    try {
+      globalThis.localStorage?.setItem(key, JSON.stringify(this.filters))
+    } catch {
+      // Private mode, quota — silently ignore.
+    }
   }
 
   // ---- filters ----
 
   private setFilters(next: FilterValues) {
     this.filters = next
+    this.persistFilters()
     this.render()
     this.restartEventsStore()
   }
@@ -480,6 +553,7 @@ export class AuditTrailElement extends HTMLElement {
           nlpExplanation: result.explanation,
           nlpUnsupported: result.unsupported,
         }
+        this.persistFilters()
         this.render()
         this.restartEventsStore()
       } catch (err) {
@@ -506,6 +580,7 @@ export class AuditTrailElement extends HTMLElement {
                 nlpExplanation: retry.explanation,
                 nlpUnsupported: retry.unsupported,
               }
+              this.persistFilters()
               this.render()
               this.restartEventsStore()
               return

@@ -142,6 +142,81 @@ export function AuditTrail(props: AuditTrailProps) {
     return new Set(DEFAULT_VISIBLE_COLUMNS)
   })
 
+  // Tracks which (sub, tenant_id) pair we've already restored from
+  // localStorage. Keyed so a token swap to a different project re-runs
+  // restore; persist effects skip writes until restore has matched.
+  const restoredKeyRef = useRef<string | null>(null)
+  const claimsKey = claims?.sub ? `${claims.sub}:${claims.tenant_id || '_'}` : null
+
+  // Restore visibleSet + filters from localStorage when claims first
+  // resolve for a given project/tenant. Runs once per unique claims
+  // pair; subsequent token refreshes (same sub) don't re-restore.
+  useEffect(() => {
+    if (!claimsKey) return
+    if (restoredKeyRef.current === claimsKey) return
+    restoredKeyRef.current = claimsKey
+    try {
+      const raw = globalThis.localStorage?.getItem(`audit-trail:cols:${claimsKey}`)
+      if (raw) {
+        const hidden = JSON.parse(raw)
+        if (Array.isArray(hidden)) {
+          setVisibleSet((prev) => {
+            const next = new Set(prev)
+            for (const c of hidden) {
+              if (typeof c === 'string') next.delete(c)
+            }
+            return next
+          })
+        }
+      }
+    } catch {
+      // Malformed JSON / storage error — keep defaults.
+    }
+    try {
+      const raw = globalThis.localStorage?.getItem(`audit-trail:filters:${claimsKey}`)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (parsed && typeof parsed === 'object') {
+          const range = parsed.range
+          if (
+            range === '24h' ||
+            range === '7d' ||
+            range === '30d' ||
+            range === 'custom' ||
+            range === 'all'
+          ) {
+            setFilters(parsed as FilterValues)
+          }
+        }
+      }
+    } catch {
+      // Malformed JSON / storage error — keep defaults.
+    }
+  }, [claimsKey])
+
+  // Persist visibleSet whenever it changes — but only after restore has
+  // run for this claims pair, so we don't clobber saved state with the
+  // initial defaults during the brief window between mount and restore.
+  useEffect(() => {
+    if (!claimsKey || restoredKeyRef.current !== claimsKey) return
+    try {
+      const hidden = availableColumns.filter((c) => !visibleSet.has(c))
+      globalThis.localStorage?.setItem(`audit-trail:cols:${claimsKey}`, JSON.stringify(hidden))
+    } catch {
+      // Private mode, quota — silently ignore.
+    }
+  }, [visibleSet, claimsKey, availableColumns])
+
+  // Persist filters whenever they change — same guard as columns.
+  useEffect(() => {
+    if (!claimsKey || restoredKeyRef.current !== claimsKey) return
+    try {
+      globalThis.localStorage?.setItem(`audit-trail:filters:${claimsKey}`, JSON.stringify(filters))
+    } catch {
+      // Private mode, quota — silently ignore.
+    }
+  }, [filters, claimsKey])
+
   const visibleColumns = useMemo(
     () => availableColumns.filter((c) => visibleSet.has(c)),
     [availableColumns, visibleSet],
