@@ -1,22 +1,16 @@
 import type { ReactNode } from 'react'
-import { COLUMN_LABELS, type Event } from '@everscribe/components-core'
+import { COLUMN_LABELS, formatTimeCell, type Event } from '@everscribe/components-core'
 
 export interface EventRowProps {
   event: Event
   columns: string[]
+  // `now` is passed in so EventTable controls the tick cadence; rows
+  // stay pure renders driven by their props.
+  now: number
   onClick?: (event: Event) => void
 }
 
-const TIMESTAMP_FMT = new Intl.DateTimeFormat(undefined, {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-  second: '2-digit',
-})
-
-export function EventRow({ event, columns, onClick }: EventRowProps) {
+export function EventRow({ event, columns, now, onClick }: EventRowProps) {
   const interactive = Boolean(onClick)
   return (
     <tr
@@ -40,14 +34,14 @@ export function EventRow({ event, columns, onClick }: EventRowProps) {
           className={`audit-trail-cell audit-trail-cell-${col}`}
           data-label={COLUMN_LABELS[col] ?? col}
         >
-          {renderCell(col, event)}
+          {renderCell(col, event, now)}
         </td>
       ))}
     </tr>
   )
 }
 
-function renderCell(column: string, event: Event): ReactNode {
+function renderCell(column: string, event: Event, now: number): ReactNode {
   switch (column) {
     case 'result':
       return renderResult(event.result)
@@ -62,7 +56,7 @@ function renderCell(column: string, event: Event): ReactNode {
       if (column === 'occurred_at' && typeof value === 'string') {
         return (
           <time dateTime={value} title={value}>
-            {formatTimestamp(value)}
+            {formatTimeCell(value, now)}
           </time>
         )
       }
@@ -75,12 +69,6 @@ function renderCell(column: string, event: Event): ReactNode {
 
 function getField(event: Event, key: string): unknown {
   return (event as unknown as Record<string, unknown>)[key]
-}
-
-function formatTimestamp(rfc3339: string): string {
-  const d = new Date(rfc3339)
-  if (Number.isNaN(d.getTime())) return rfc3339
-  return TIMESTAMP_FMT.format(d)
 }
 
 // renderResult shows the status as a small pill so the table cell

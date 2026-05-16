@@ -1,4 +1,5 @@
 import { COLUMN_LABELS, type Event } from '@everscribe/components-core'
+import { useRelativeTimeTick } from '../hooks/useRelativeTimeTick.js'
 import { EventRow } from './EventRow.js'
 
 export interface EventTableProps {
@@ -8,6 +9,10 @@ export interface EventTableProps {
 }
 
 export function EventTable({ events, visibleColumns, onRowClick }: EventTableProps) {
+  // 30s tick re-renders the table so each row's "N ago" string stays
+  // current. The absolute half is stable; only the text inside the
+  // <time> cell changes per tick.
+  const now = useRelativeTimeTick()
   return (
     <div className="audit-trail-table-wrap">
       <table className="audit-trail-table">
@@ -26,6 +31,7 @@ export function EventTable({ events, visibleColumns, onRowClick }: EventTablePro
               key={event.id}
               event={event}
               columns={visibleColumns}
+              now={now}
               onClick={onRowClick}
             />
           ))}

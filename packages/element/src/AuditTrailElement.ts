@@ -2,10 +2,12 @@ import {
   ALL_COLUMNS,
   COLUMN_LABELS,
   EmbedError,
+  RELATIVE_TIME_TICK_MS,
   createDistinctValuesStore,
   createEventsStore,
   exportEvents,
   fetchTokenViaOpts,
+  formatTimeCell,
   generateNLPFilters,
   parseClaims,
   type DistinctValues,
@@ -112,15 +114,21 @@ export class AuditTrailElement extends HTMLElement {
   private detailDispose: (() => void) | null = null
   private exportDispose: (() => void) | null = null
 
+  // 30s timer that refreshes the relative half of each row's
+  // "absolute (N ago)" timestamp without rebuilding the table.
+  private relativeTimeTimer: ReturnType<typeof setInterval> | null = null
+
   connectedCallback() {
     this.classList.add('audit-trail-root')
     this.classList.add(`audit-trail-theme-${this.themeAttr()}`)
     this.filters = { range: this.defaultTimeRangeAttr() }
     this.start()
+    this.startRelativeTimeTimer()
   }
 
   disconnectedCallback() {
     this.cleanup()
+    this.stopRelativeTimeTimer()
   }
 
   attributeChangedCallback(name: string, oldVal: string | null, newVal: string | null) {
@@ -349,6 +357,31 @@ export class AuditTrailElement extends HTMLElement {
     this.nlpAbort = null
     this.disposeModals()
     this.cleanupStores()
+  }
+
+  private startRelativeTimeTimer() {
+    if (this.relativeTimeTimer !== null) return
+    this.relativeTimeTimer = setInterval(
+      () => this.tickRelativeTimes(),
+      RELATIVE_TIME_TICK_MS,
+    )
+  }
+
+  private stopRelativeTimeTimer() {
+    if (this.relativeTimeTimer === null) return
+    clearInterval(this.relativeTimeTimer)
+    this.relativeTimeTimer = null
+  }
+
+  private tickRelativeTimes() {
+    const cells = this.querySelectorAll<HTMLTimeElement>('time[data-occurred-at]')
+    if (cells.length === 0) return
+    const now = Date.now()
+    cells.forEach((c) => {
+      const iso = c.getAttribute('data-occurred-at')
+      if (!iso) return
+      c.textContent = formatTimeCell(iso, now)
+    })
   }
 
   private disposeModals() {

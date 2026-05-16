@@ -50,6 +50,8 @@ export type { DiffKind, DiffLine, DiffView } from './diff.js'
 
 export { COLUMN_LABELS, ALL_COLUMNS } from './columns.js'
 
+export { formatAbsolute, formatRelative, formatTimeCell, RELATIVE_TIME_TICK_MS } from './time.js'
+
 export { createEventsStore } from './eventsStore.js'
 export type {
   EventsStatus,

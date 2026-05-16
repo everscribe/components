@@ -1,15 +1,6 @@
-import { COLUMN_LABELS, type Event } from '@everscribe/components-core'
+import { COLUMN_LABELS, formatTimeCell, type Event } from '@everscribe/components-core'
 
 import { h, type Child } from './dom.js'
-
-const TIMESTAMP_FMT = new Intl.DateTimeFormat(undefined, {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-  second: '2-digit',
-})
 
 export function renderTable(
   events: Event[],
@@ -85,7 +76,18 @@ function renderCell(column: string, event: Event): Child {
       const value = getField(event, column)
       if (value == null) return null
       if (column === 'occurred_at' && typeof value === 'string') {
-        return h('time', { datetime: value, title: value }, formatTimestamp(value))
+        return h(
+          'time',
+          {
+            datetime: value,
+            title: value,
+            // Marker for AuditTrailElement's 30s tick: each render uses
+            // Date.now(), and the timer queries by this attribute to
+            // refresh the relative half without rebuilding the table.
+            'data-occurred-at': value,
+          },
+          formatTimeCell(value, Date.now()),
+        )
       }
       if (typeof value === 'string') return value
       if (typeof value === 'object') return summarizeObject(value)
@@ -96,12 +98,6 @@ function renderCell(column: string, event: Event): Child {
 
 function getField(event: Event, key: string): unknown {
   return (event as unknown as Record<string, unknown>)[key]
-}
-
-function formatTimestamp(rfc3339: string): string {
-  const d = new Date(rfc3339)
-  if (Number.isNaN(d.getTime())) return rfc3339
-  return TIMESTAMP_FMT.format(d)
 }
 
 // renderResult shows the status as a small pill so the table cell
