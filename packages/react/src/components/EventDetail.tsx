@@ -84,11 +84,15 @@ export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProp
           Inspect Event
         </h2>
         <p className="audit-trail-inspect-subtitle">
-          <code>{event.action || '—'}</code>
-          {' · '}
-          {formatHeaderTimestamp(event.occurred_at)}
-          {' · ID '}
-          <code>{event.id}</code>
+          <span className="audit-trail-inspect-subtitle-line">
+            <code>{event.action || '—'}</code>
+          </span>
+          <span className="audit-trail-inspect-subtitle-line">
+            {formatHeaderTimestamp(event.occurred_at)}
+          </span>
+          <span className="audit-trail-inspect-subtitle-line">
+            <code>{event.id}</code>
+          </span>
         </p>
 
         {(showDiff || showMetadata) && (

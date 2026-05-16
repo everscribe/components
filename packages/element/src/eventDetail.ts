@@ -136,11 +136,21 @@ export function openEventDetail(opts: EventDetailOptions): () => void {
   const subtitle = h(
     'p',
     { class: 'audit-trail-inspect-subtitle' },
-    h('code', null, event.action || '—'),
-    ' · ',
-    formatHeaderTimestamp(event.occurred_at),
-    ' · ID ',
-    h('code', null, event.id),
+    h(
+      'span',
+      { class: 'audit-trail-inspect-subtitle-line' },
+      h('code', null, event.action || '—'),
+    ),
+    h(
+      'span',
+      { class: 'audit-trail-inspect-subtitle-line' },
+      formatHeaderTimestamp(event.occurred_at),
+    ),
+    h(
+      'span',
+      { class: 'audit-trail-inspect-subtitle-line' },
+      h('code', null, event.id),
+    ),
   )
 
   const tabs =

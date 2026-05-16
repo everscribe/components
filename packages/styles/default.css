@@ -735,9 +735,13 @@
   inset: 0;
   z-index: 1000;
   display: flex;
-  align-items: center;
+  /* safe center keeps the modal centered when it fits and falls back
+   * to flex-start when the modal is taller than the viewport, so the
+   * top of the modal stays reachable while the backdrop scrolls. */
+  align-items: safe center;
   justify-content: center;
   padding: var(--audit-trail-spacing);
+  overflow-y: auto;
   background: var(--audit-trail-overlay);
   animation: audit-trail-fade-in 0.15s ease;
 }
@@ -748,7 +752,6 @@
   flex-direction: column;
   gap: var(--audit-trail-spacing-sm);
   width: min(720px, 100%);
-  max-height: 85vh;
   padding: var(--audit-trail-spacing-xl);
   border: 1px solid var(--audit-trail-border);
   border-radius: var(--audit-trail-radius);
@@ -757,7 +760,6 @@
   font-family: var(--audit-trail-font-family);
   font-size: var(--audit-trail-font-size);
   box-shadow: var(--audit-trail-shadow);
-  overflow: hidden;
 }
 
 .audit-trail-inspect-close {
@@ -799,6 +801,13 @@
   color: var(--audit-trail-fg-muted);
   font-size: var(--audit-trail-font-size-sm);
   word-break: break-all;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.audit-trail-inspect-subtitle-line {
+  display: block;
 }
 
 .audit-trail-inspect-subtitle code {
@@ -847,9 +856,10 @@
 }
 
 .audit-trail-inspect-panel {
-  flex: 1 1 auto;
+  /* The panel sizes to its content; the backdrop scrolls when the
+   * modal exceeds the viewport. The Raw tab's code block expands to
+   * show the full event JSON without an inner scrollbar. */
   min-height: 0;
-  overflow: auto;
 }
 
 /* ---- Raw JSON code block ---- */
