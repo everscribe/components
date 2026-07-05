@@ -33,7 +33,9 @@
   <img src="assets/preview.png" alt="Embedded Everscribe activity log" width="820">
 </p>
 
-## Documentation
+<div align="center">
+
+## 📖 Documentation
 
 Start with the [prerequisites](https://everscribe.io/docs/web-components/prerequisites)
 for the embed flow, token minting, refresh, and secret rotation. Per-package reference:
@@ -46,3 +48,6 @@ for the embed flow, token minting, refresh, and secret rotation. Per-package ref
 | [`@everscribe/components-styles`](packages/styles#readme) | [Styles](https://everscribe.io/docs/web-components/styles) |
 
 > **Vue, Angular, and Svelte** (shown above) are covered by [`@everscribe/components-core`](packages/core#readme), the framework-agnostic data layer whose observable stores plug into any framework's reactivity, so you can build the audit-trail UI in whatever stack you use. The `<audit-trail>` [Web component](packages/element#readme) is a drop-in alternative that works in all three as well.
+
+</div>
+
