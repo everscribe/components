@@ -22,11 +22,11 @@
 </p>
 
 <p align="center">
-  <img src="assets/preview.png" alt="Embedded Everscribe activity log" width="820">
+  <sub>Screenshot from the <a href="https://github.com/everscribe/examples">full-stack runnable examples</a>.</sub>
 </p>
 
 <p align="center">
-  <sub>Screenshot from the <a href="https://github.com/everscribe/examples">full-stack runnable examples</a>.</sub>
+  <img src="assets/preview.png" alt="Embedded Everscribe activity log" width="820">
 </p>
 
 ## Documentation
