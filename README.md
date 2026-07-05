@@ -7,6 +7,10 @@
 <p align="center">
   <img src="assets/react.svg" alt="React" height="44" align="middle">
   &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="assets/vue.svg" alt="Vue" height="44" align="middle">
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="assets/angular.svg" alt="Angular" height="44" align="middle">
+  &nbsp;&nbsp;&nbsp;&nbsp;
   <img src="assets/svelte.svg" alt="Svelte" height="44" align="middle">
   &nbsp;&nbsp;&nbsp;&nbsp;
   <img src="assets/typescript.svg" alt="TypeScript" height="44" align="middle">
@@ -31,8 +35,8 @@
 
 ## Documentation
 
-Start with the [web components overview](https://everscribe.io/docs/web-components/overview)
-for the embed flow, token minting, theming, security, and rate limits. Per-package reference:
+Start with the [prerequisites](https://everscribe.io/docs/web-components/prerequisites)
+for the embed flow, token minting, refresh, and secret rotation. Per-package reference:
 
 | Package | Documentation |
 |---|---|
@@ -40,3 +44,5 @@ for the embed flow, token minting, theming, security, and rate limits. Per-packa
 | [`@everscribe/components-element`](packages/element#readme) | [Web component](https://everscribe.io/docs/web-components/vanilla) |
 | [`@everscribe/components-core`](packages/core#readme) | [Core](https://everscribe.io/docs/web-components/core) |
 | [`@everscribe/components-styles`](packages/styles#readme) | [Styles](https://everscribe.io/docs/web-components/styles) |
+
+> **Vue, Angular, and Svelte** (shown above) are covered by [`@everscribe/components-core`](packages/core#readme), the framework-agnostic data layer whose observable stores plug into any framework's reactivity, so you can build the audit-trail UI in whatever stack you use. The `<audit-trail>` [Web component](packages/element#readme) is a drop-in alternative that works in all three as well.
