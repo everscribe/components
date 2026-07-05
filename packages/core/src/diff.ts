@@ -31,7 +31,7 @@ export function renderDiff(change: unknown): DiffView {
 }
 
 // hasParseableDiff is the cheap predicate for "should we show the Diff
-// tab?" — true when the change payload has at least one of {before,
+// tab?" - true when the change payload has at least one of {before,
 // after} present (matches renderDiff's early-out logic without paying
 // the LCS cost).
 export function hasParseableDiff(change: unknown): boolean {

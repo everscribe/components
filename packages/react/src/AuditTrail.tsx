@@ -170,7 +170,7 @@ export function AuditTrail(props: AuditTrailProps) {
         }
       }
     } catch {
-      // Malformed JSON / storage error — keep defaults.
+      // Malformed JSON / storage error - keep defaults.
     }
     try {
       const raw = globalThis.localStorage?.getItem(`audit-trail:filters:${claimsKey}`)
@@ -190,11 +190,11 @@ export function AuditTrail(props: AuditTrailProps) {
         }
       }
     } catch {
-      // Malformed JSON / storage error — keep defaults.
+      // Malformed JSON / storage error - keep defaults.
     }
   }, [claimsKey])
 
-  // Persist visibleSet whenever it changes — but only after restore has
+  // Persist visibleSet whenever it changes - but only after restore has
   // run for this claims pair, so we don't clobber saved state with the
   // initial defaults during the brief window between mount and restore.
   useEffect(() => {
@@ -203,17 +203,17 @@ export function AuditTrail(props: AuditTrailProps) {
       const hidden = availableColumns.filter((c) => !visibleSet.has(c))
       globalThis.localStorage?.setItem(`audit-trail:cols:${claimsKey}`, JSON.stringify(hidden))
     } catch {
-      // Private mode, quota — silently ignore.
+      // Private mode, quota - silently ignore.
     }
   }, [visibleSet, claimsKey, availableColumns])
 
-  // Persist filters whenever they change — same guard as columns.
+  // Persist filters whenever they change - same guard as columns.
   useEffect(() => {
     if (!claimsKey || restoredKeyRef.current !== claimsKey) return
     try {
       globalThis.localStorage?.setItem(`audit-trail:filters:${claimsKey}`, JSON.stringify(filters))
     } catch {
-      // Private mode, quota — silently ignore.
+      // Private mode, quota - silently ignore.
     }
   }, [filters, claimsKey])
 
@@ -236,7 +236,7 @@ export function AuditTrail(props: AuditTrailProps) {
     [filters],
   )
 
-  // Live indicator tracks whether useEvents will actually poll —
+  // Live indicator tracks whether useEvents will actually poll -
   // mirrors the disable condition inside useEvents (pollInterval > 0
   // and no closed upper time bound).
   const livePollActive = pollIntervalMs > 0 && !filterBefore

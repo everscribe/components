@@ -102,13 +102,13 @@ function getField(event: Event, key: string): unknown {
 
 // renderResult shows the status as a small pill so the table cell
 // reads at a glance ("ok" / "error") instead of the generic
-// {N fields} fallback. The numeric code is intentionally omitted —
+// {N fields} fallback. The numeric code is intentionally omitted -
 // it lives in the Raw tab of the inspect modal for callers who need it.
 function renderResult(value: unknown): Child {
-  if (value == null || typeof value !== 'object') return '—'
+  if (value == null || typeof value !== 'object') return '-'
   const obj = value as { status?: unknown }
   const status = typeof obj.status === 'string' ? obj.status : ''
-  if (!status) return '—'
+  if (!status) return '-'
   return h(
     'span',
     { class: `audit-trail-status audit-trail-status-${cssToken(status)}` },
@@ -120,7 +120,7 @@ function renderResult(value: unknown): Child {
 // scans for (IP, hostname). Falls back to the generic object summary
 // only when none of those are present.
 function renderOrigin(value: unknown): Child {
-  if (value == null || typeof value !== 'object') return '—'
+  if (value == null || typeof value !== 'object') return '-'
   const obj = value as Record<string, unknown>
   for (const key of ['ip', 'hostname', 'host']) {
     const v = obj[key]
@@ -131,19 +131,19 @@ function renderOrigin(value: unknown): Child {
 
 // renderPresence collapses arbitrary-shape JSON columns (change,
 // metadata) to a single "View" affordance when content exists, else
-// "—". The full payload is still reachable via the row's detail
+// "-". The full payload is still reachable via the row's detail
 // panel; the cell just signals presence.
 function renderPresence(value: unknown): Child {
-  if (value == null) return '—'
+  if (value == null) return '-'
   if (typeof value === 'object') {
     const keys = Object.keys(value as object)
-    if (keys.length === 0) return '—'
+    if (keys.length === 0) return '-'
     return h('span', { class: 'audit-trail-cell-presence' }, 'View')
   }
   if (typeof value === 'string' && value.length > 0) {
     return h('span', { class: 'audit-trail-cell-presence' }, 'View')
   }
-  return '—'
+  return '-'
 }
 
 function summarizeObject(value: object): string {
@@ -153,7 +153,7 @@ function summarizeObject(value: object): string {
     if (typeof v === 'string' && v.length > 0) return v
   }
   const keys = Object.keys(obj)
-  if (keys.length === 0) return '—'
+  if (keys.length === 0) return '-'
   return `{${keys.length} ${keys.length === 1 ? 'field' : 'fields'}}`
 }
 

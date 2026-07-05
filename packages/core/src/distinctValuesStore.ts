@@ -73,7 +73,7 @@ export function createDistinctValuesStore(
         listChangeFields(base).catch(() => ({ fields: [] })),
       ])
     if (disposed) return
-    // Coerce nullable response fields to empty arrays — the Go server
+    // Coerce nullable response fields to empty arrays - the Go server
     // serializes a nil slice as `null`, not `[]`, when a project has
     // no rows. Without this guard, `distinct.metadataKeys.map(...)`
     // crashes on a fresh project.

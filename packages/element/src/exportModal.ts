@@ -10,7 +10,7 @@ export interface ExportModalOptions {
   onDownload: (format: ExportFormat) => Promise<void>
   // Fired on user-initiated dismissal (Esc, backdrop, Cancel button).
   // Not fired on programmatic dispose, nor on a successful download
-  // (the modal still closes itself in both cases — the parent already
+  // (the modal still closes itself in both cases - the parent already
   // knows or doesn't care).
   onClose: () => void
 }
@@ -74,7 +74,7 @@ export function openExportModal(opts: ExportModalOptions): () => void {
     h(
       'p',
       { class: 'audit-trail-export-blurb' },
-      'The current filters and time range are applied. Capped at 100,000 rows — narrow the filters or time window if you hit it.',
+      'The current filters and time range are applied. Capped at 100,000 rows - narrow the filters or time window if you hit it.',
     ),
     h('div', { class: 'audit-trail-export-options' }, csvCard, jsonCard),
     errorSlot,
@@ -154,7 +154,7 @@ export function openExportModal(opts: ExportModalOptions): () => void {
       try {
         await onDownload(format!)
         if (disposed) return
-        // Successful download — close the modal. We don't fire
+        // Successful download - close the modal. We don't fire
         // onClose because the parent already drove the action.
         dispose()
       } catch (err) {

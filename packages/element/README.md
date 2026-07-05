@@ -9,7 +9,7 @@
 
 # @everscribe/components-element
 
-Framework-agnostic `<audit-trail>` custom element for [Everscribe](https://everscribe.io) audit events. Drop the tag into any HTML, in any framework — plain JS, Vue, Svelte, Solid, Angular — and you get the same live, scoped audit trail UI you'd get from the React component.
+Framework-agnostic `<audit-trail>` custom element for [Everscribe](https://everscribe.io) audit events. Drop the tag into any HTML, in any framework - plain JS, Vue, Svelte, Solid, Angular - and you get the same live, scoped audit trail UI you'd get from the React component.
 
 Part of [@everscribe/components](https://github.com/everscribe/components#readme). Token minting, the refresh chain, theming, security, rate limits, and claim-driven UI are covered in the [web components guide](https://everscribe.io/docs/web-components/overview).
 
@@ -19,7 +19,7 @@ Part of [@everscribe/components](https://github.com/everscribe/components#readme
 npm install @everscribe/components-element @everscribe/components-styles
 ```
 
-The element registers itself as `<audit-trail>` on import (idempotent — safe to import in multiple bundles). The styles package ships the CSS theme; install it alongside.
+The element registers itself as `<audit-trail>` on import (idempotent - safe to import in multiple bundles). The styles package ships the CSS theme; install it alongside.
 
 ## Quick start (plain HTML)
 
@@ -61,7 +61,7 @@ Custom elements are first-class in these frameworks. The tag works as written, a
 <audit-trail token-endpoint="/api/embed-token" on:audit-trail-error={handleError} />
 ```
 
-For React 18, prefer [`@everscribe/components-react`](../react#readme) — React 18's custom-element interop has known rough edges around prop conventions and synthetic events.
+For React 18, prefer [`@everscribe/components-react`](../react#readme) - React 18's custom-element interop has known rough edges around prop conventions and synthetic events.
 
 ## Attributes
 
@@ -69,8 +69,8 @@ At least one of `token`, `token-endpoint`, or the JS-only `onTokenExpired` prope
 
 | Attribute | Type | Default | Notes |
 |---|---|---|---|
-| `token` | string | — | Embed JWT. If omitted, the element fetches one via `token-endpoint`/`onTokenExpired` on mount. |
-| `token-endpoint` | string | — | URL on your backend that returns `{ token }` JSON. Used for the initial fetch (when `token` is omitted) and for refresh on 401. Sent with `credentials: 'include'`. |
+| `token` | string | - | Embed JWT. If omitted, the element fetches one via `token-endpoint`/`onTokenExpired` on mount. |
+| `token-endpoint` | string | - | URL on your backend that returns `{ token }` JSON. Used for the initial fetch (when `token` is omitted) and for refresh on 401. Sent with `credentials: 'include'`. |
 | `api-base` | string | `https://api.everscribe.io/v1/embed` | Base URL for read endpoints. Override for local dev or self-hosted. |
 | `page-size` | number | `25` | Events per page. |
 | `poll-interval` | number | `5000` | Poll cadence in ms. `<= 0` disables polling. Below `1000` is clamped with a `console.warn`. |
@@ -83,12 +83,12 @@ Style and class come from the standard `class` and `style` attributes. The eleme
 
 Column visibility and filter state are persisted to `localStorage` automatically and restored on reload. Two keys are written, both namespaced by the token's project ID (`sub` claim) and tenant ID (`tenant_id` claim, or `_` when unset):
 
-- `audit-trail:cols:{sub}:{tenant_id}` — the list of *hidden* columns. Stored as hidden (not visible) so future-added columns appear by default for returning users.
-- `audit-trail:filters:{sub}:{tenant_id}` — the active filter state (`FilterValues`): time range, column filters, free-text actor/target/origin inputs, the active DSL query, and the last NLP echo fields.
+- `audit-trail:cols:{sub}:{tenant_id}` - the list of *hidden* columns. Stored as hidden (not visible) so future-added columns appear by default for returning users.
+- `audit-trail:filters:{sub}:{tenant_id}` - the active filter state (`FilterValues`): time range, column filters, free-text actor/target/origin inputs, the active DSL query, and the last NLP echo fields.
 
 Behavior:
 - Restored after the bootstrap token fetch resolves, so the very first request to `/events` already reflects the user's last session.
-- localStorage failures (private browsing, quota exceeded, malformed JSON) are silently swallowed — the element falls through to the default-time-range attribute and empty filters.
+- localStorage failures (private browsing, quota exceeded, malformed JSON) are silently swallowed - the element falls through to the default-time-range attribute and empty filters.
 - Token claims that restrict columns (`columns` claim set) take precedence over restored hidden columns; the restored list can only narrow the claim-allowed set, never escape it.
 - Two `<audit-trail>` instances on the same page sharing the same `sub` + `tenant_id` will share persisted state. This is a degenerate case (the same view embedded twice) and generally desirable when it does happen.
 

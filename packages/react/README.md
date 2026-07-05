@@ -38,7 +38,7 @@ export function AuditPage() {
 
 If your React app and backend share an origin, a relative path (`/api/embed-token`) works too.
 
-If you'd rather control the initial fetch yourself — explicit loading states, integration with an auth context, or a token already in hand — pass it as the `token` prop:
+If you'd rather control the initial fetch yourself - explicit loading states, integration with an auth context, or a token already in hand - pass it as the `token` prop:
 
 ```tsx
 import { useEffect, useState } from 'react'
@@ -69,35 +69,35 @@ At least one of `token`, `tokenEndpoint`, or `onTokenExpired` is required.
 
 | Prop | Type | Default | Notes |
 |---|---|---|---|
-| `token` | `string` | — | Embed JWT. If omitted, the component fetches one via `tokenEndpoint`/`onTokenExpired` on mount. |
-| `tokenEndpoint` | `string` | — | URL on your backend that returns `{ token }` JSON. Used for the initial fetch (when `token` is omitted) and for refresh on 401. Sent with `credentials: 'include'`. |
-| `onTokenExpired` | `() => Promise<string>` | — | Custom token-fetch callback. Takes precedence over `tokenEndpoint`. |
+| `token` | `string` | - | Embed JWT. If omitted, the component fetches one via `tokenEndpoint`/`onTokenExpired` on mount. |
+| `tokenEndpoint` | `string` | - | URL on your backend that returns `{ token }` JSON. Used for the initial fetch (when `token` is omitted) and for refresh on 401. Sent with `credentials: 'include'`. |
+| `onTokenExpired` | `() => Promise<string>` | - | Custom token-fetch callback. Takes precedence over `tokenEndpoint`. |
 | `apiBase` | `string` | `https://api.everscribe.io/v1/embed` | Base URL for read endpoints. Override for local dev or self-hosted. |
 | `pageSize` | `number` | `25` | Events per page. |
 | `pollInterval` | `number` | `5000` | Poll cadence in ms. `<= 0` disables polling. Below `1000` is clamped with a `console.warn`. |
 | `theme` | `'light' \| 'dark'` | `'light'` | Switches the CSS-variable theme. |
 | `defaultTimeRange` | `'24h' \| '7d' \| '30d' \| 'all'` | `'all'` | Initial time-range preset for the filters panel. |
-| `className` | `string` | — | Merged onto the root element. |
-| `style` | `CSSProperties` | — | Inline style on the root. Use to override CSS variables at runtime. |
-| `onError` | `(err: Error) => void` | — | Observability hook for fetch errors. |
+| `className` | `string` | - | Merged onto the root element. |
+| `style` | `CSSProperties` | - | Inline style on the root. Use to override CSS variables at runtime. |
+| `onError` | `(err: Error) => void` | - | Observability hook for fetch errors. |
 
 ## Persistence
 
 Column visibility and filter state are persisted to `localStorage` automatically and restored on mount. Two keys are written, both namespaced by the token's project ID (`sub` claim) and tenant ID (`tenant_id` claim, or `_` when unset):
 
-- `audit-trail:cols:{sub}:{tenant_id}` — the list of *hidden* columns. Stored as hidden (not visible) so future-added columns appear by default for returning users.
-- `audit-trail:filters:{sub}:{tenant_id}` — the active filter state (`FilterValues`): time range, column filters, free-text inputs, the active DSL query, and the last NLP echo fields.
+- `audit-trail:cols:{sub}:{tenant_id}` - the list of *hidden* columns. Stored as hidden (not visible) so future-added columns appear by default for returning users.
+- `audit-trail:filters:{sub}:{tenant_id}` - the active filter state (`FilterValues`): time range, column filters, free-text inputs, the active DSL query, and the last NLP echo fields.
 
 Behavior:
 - Restored once the token bootstrap resolves and the JWT is parsed, so the first request to `/events` reflects the user's last session.
 - Swapping the `token` prop to a different project re-restores from that project's storage; persistence picks up under the new key.
-- localStorage failures (private browsing, quota exceeded, malformed JSON) are silently swallowed — falls through to `defaultTimeRange` and empty filters.
+- localStorage failures (private browsing, quota exceeded, malformed JSON) are silently swallowed - falls through to `defaultTimeRange` and empty filters.
 - Token claims that restrict columns (`columns` claim set) take precedence over restored hidden columns.
 - Storage keys are identical between this package and `@everscribe/components-element`, so a customer using both adapters under the same origin shares state cleanly.
 
 ## SSR / Next.js
 
-The component is marked `'use client'` — drop it into a Server Component tree as-is. The detail drawer mounts after hydration via a portal to `document.body`, so SSR output is unaffected. The persistence `useEffect`s only fire on the client after hydration, so they have no SSR side effects.
+The component is marked `'use client'` - drop it into a Server Component tree as-is. The detail drawer mounts after hydration via a portal to `document.body`, so SSR output is unaffected. The persistence `useEffect`s only fire on the client after hydration, so they have no SSR side effects.
 
 ## License
 

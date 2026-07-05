@@ -50,7 +50,7 @@ export interface EmbedClaims {
 
 /**
  * MetadataKey describes one entry in the project's metadata
- * vocabulary side table — surfaced for the inline metadata-filter
+ * vocabulary side table - surfaced for the inline metadata-filter
  * builder's autocomplete and the NLP context.
  */
 export interface MetadataKey {

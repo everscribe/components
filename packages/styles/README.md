@@ -9,7 +9,7 @@
 
 # @everscribe/components-styles
 
-Default theme stylesheet for [@everscribe/components-react](https://github.com/everscribe/components/tree/main/packages/react#readme) and [@everscribe/components-element](https://github.com/everscribe/components/tree/main/packages/element#readme). Required by both — install it alongside whichever component package you're using.
+Default theme stylesheet for [@everscribe/components-react](https://github.com/everscribe/components/tree/main/packages/react#readme) and [@everscribe/components-element](https://github.com/everscribe/components/tree/main/packages/element#readme). Required by both - install it alongside whichever component package you're using.
 
 Part of [@everscribe/components](https://github.com/everscribe/components#readme).
 
@@ -19,7 +19,7 @@ Part of [@everscribe/components](https://github.com/everscribe/components#readme
 npm install @everscribe/components-styles
 ```
 
-No build step, no JS — it's a static `.css` file.
+No build step, no JS - it's a static `.css` file.
 
 ## Usage
 

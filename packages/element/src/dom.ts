@@ -1,5 +1,5 @@
 // Tiny createElement helper used throughout the web component renderer
-// — saves the createElement / setAttribute / appendChild boilerplate
+// - saves the createElement / setAttribute / appendChild boilerplate
 // without pulling in JSX or a templating library.
 
 type AttrValue = string | number | boolean | undefined | null

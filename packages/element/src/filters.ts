@@ -11,7 +11,7 @@ export type FilterTab = 'ai' | 'filters' | 'query'
 export interface FilterValues {
   range: TimeRangePreset
   // since / before are only meaningful when range === 'custom'.
-  // Stored as datetime-local strings (YYYY-MM-DDTHH:mm) — the API
+  // Stored as datetime-local strings (YYYY-MM-DDTHH:mm) - the API
   // wants ISO, so resolveTimeBounds promotes them at send-time.
   since?: string
   before?: string
@@ -23,10 +23,10 @@ export interface FilterValues {
   targetId?: string
   resultStatus?: string
   originIP?: string
-  // q is the DSL query — set from the Query tab (user input) or
+  // q is the DSL query - set from the Query tab (user input) or
   // the Prompt tab (model-translated). Active filter chips parse this.
   q?: string
-  // NLP echo fields — set when the Prompt tab produced the current q.
+  // NLP echo fields - set when the Prompt tab produced the current q.
   // Render the "Translated to:" banner from these.
   nlpQ?: string
   nlpExplanation?: string
@@ -227,7 +227,7 @@ function renderAITabPanel(opts: FiltersPanelOptions): HTMLElement {
   } else {
     btn.textContent = 'Search'
   }
-  // Re-evaluate disabled state when input changes — empty query
+  // Re-evaluate disabled state when input changes - empty query
   // keeps Search disabled.
   const updateBtn = () => {
     if (nlpState.phase === 'loading') return
@@ -279,7 +279,7 @@ function renderUnsupportedList(items: string[]): HTMLElement {
 }
 
 // ============================================================
-// Filters tab — time-range presets, column filters, metadata builder.
+// Filters tab - time-range presets, column filters, metadata builder.
 // Column filters are draft-based: nothing commits until "Add filters"
 // is clicked. Time-range presets apply immediately (view selector).
 // ============================================================
@@ -288,7 +288,7 @@ function renderFiltersTabPanel(opts: FiltersPanelOptions): HTMLElement {
   const { value, distinct, onChange, onApplied } = opts
 
   // Drafts live in the DOM inputs themselves. Add filters reads them
-  // at click time — no React-style state syncing.
+  // at click time - no React-style state syncing.
   let actionSelect: HTMLSelectElement
   let actorTypeSelect: HTMLSelectElement
   let targetTypeSelect: HTMLSelectElement
@@ -396,7 +396,7 @@ function renderFiltersTabPanel(opts: FiltersPanelOptions): HTMLElement {
   )
 
   // ---- column-filter text inputs ----
-  // Free-text filters each on their own row — three inputs side-by-
+  // Free-text filters each on their own row - three inputs side-by-
   // side wrapped awkwardly on narrow embed widths. Stacked they
   // breathe and read naturally.
   actorInput = buildTextInput(
@@ -450,7 +450,7 @@ function renderFiltersTabPanel(opts: FiltersPanelOptions): HTMLElement {
   refreshDirty()
 
   // Wire input events on every draft surface to re-evaluate the
-  // dirty flag. Cheap — no API calls until the button is clicked.
+  // dirty flag. Cheap - no API calls until the button is clicked.
   for (const el of [
     actionSelect,
     actorTypeSelect,
@@ -702,7 +702,7 @@ function renderMetadataFilterSection(
   const mdValue2Row = metadataVariant.children[3] as HTMLElement
   mdValue2Row.style.display = 'none'
 
-  // refresh must be declared BEFORE showVariant — showVariant's body
+  // refresh must be declared BEFORE showVariant - showVariant's body
   // references refresh via closure, and the initial showVariant('metadata')
   // call below would hit refresh in the temporal dead zone otherwise.
   const refresh = () => {
@@ -719,7 +719,7 @@ function renderMetadataFilterSection(
       caValue: caValue.value,
     })
     addBtn.disabled = compiled.dsl === null
-    // Only surface the "between" hint while composing — other compile
+    // Only surface the "between" hint while composing - other compile
     // errors are just "you haven't filled in X yet" and would be noisy.
     if (compiled.error && /Both bounds/.test(compiled.error)) {
       errorEl.textContent = compiled.error
@@ -899,7 +899,7 @@ function quoteKeyIfNeeded(raw: string): string {
 }
 
 // ============================================================
-// Query tab — explicit-submit DSL input.
+// Query tab - explicit-submit DSL input.
 // ============================================================
 
 function renderQueryTabPanel(opts: FiltersPanelOptions): HTMLElement {
@@ -1086,7 +1086,7 @@ function hasAnyColumnFilter(v: FilterValues): boolean {
 }
 
 // countActiveColumnFilters reports active column filters. The DSL `q`
-// is excluded — it gets its own per-clause count via parseQClauses.
+// is excluded - it gets its own per-clause count via parseQClauses.
 export function countActiveColumnFilters(v: FilterValues): number {
   let n = 0
   if (v.action) n++
@@ -1106,7 +1106,7 @@ export interface ParsedClause {
 }
 
 // parseQClauses splits a top-level `field:value AND field:value` query
-// into individual chips. Lightweight tokenizer — for queries with
+// into individual chips. Lightweight tokenizer - for queries with
 // parens (within-field OR, range syntax) we bail to a single chip
 // with the full expression so the × still works as a clear-all.
 export function parseQClauses(q: string): ParsedClause[] {

@@ -10,7 +10,7 @@ export type FilterTab = 'ai' | 'filters' | 'query'
 export interface FilterValues {
   range: TimeRangePreset
   // since / before are only meaningful when range === 'custom'.
-  // Stored as datetime-local strings (YYYY-MM-DDTHH:mm) — the parent
+  // Stored as datetime-local strings (YYYY-MM-DDTHH:mm) - the parent
   // converts to ISO before sending to the API.
   since?: string
   before?: string
@@ -22,10 +22,10 @@ export interface FilterValues {
   targetId?: string
   resultStatus?: string
   originIP?: string
-  // q is the DSL query — set from the Query tab (user input) or
+  // q is the DSL query - set from the Query tab (user input) or
   // the AI tab (model-translated). Active filter chips parse this.
   q?: string
-  // NLP echo fields — set when the AI tab produced the current q.
+  // NLP echo fields - set when the AI tab produced the current q.
   // Render the "Translated to:" banner from these.
   nlpQ?: string
   nlpExplanation?: string
@@ -295,7 +295,7 @@ interface FiltersTabProps {
 
 function FiltersTabPanel({ value, onChange, distinct, onApplied }: FiltersTabProps) {
   // Local draft state for every column filter. Nothing commits until
-  // the user clicks "Add filters" — mirroring the dashboard's
+  // the user clicks "Add filters" - mirroring the dashboard's
   // explicit-submit UX. Time-range presets are the one exception:
   // they apply immediately because they're a view selector, not a
   // filter.
@@ -511,7 +511,7 @@ function FiltersTabPanel({ value, onChange, distinct, onApplied }: FiltersTabPro
         )}
       </div>
 
-      {/* Free-text filters each on their own row — three inputs side-
+      {/* Free-text filters each on their own row - three inputs side-
           by-side wrapped awkwardly on narrow embed widths. Stacked
           they breathe and read naturally. */}
       <div className="audit-trail-filter-row">
@@ -566,7 +566,7 @@ function FiltersTabPanel({ value, onChange, distinct, onApplied }: FiltersTabPro
 // ============================================================
 // Metadata / changed-field filter section. Lives inside the
 // Filters tab. The user composes a single DSL clause via picker
-// inputs and clicks Add filter to apply — which replaces q
+// inputs and clicks Add filter to apply - which replaces q
 // (and strips any AI carry-over), mirroring the dashboard's
 // "Filters tab starts clean" behavior.
 // ============================================================
@@ -620,7 +620,7 @@ function MetadataFilterSection({
   })
 
   const submittable = compiled.dsl !== null
-  // Surface only the "between" hint while composing — other compile
+  // Surface only the "between" hint while composing - other compile
   // errors (missing field, etc.) are just "you haven't filled in X yet"
   // and would be noisy while typing.
   const showError =
@@ -880,7 +880,7 @@ function compileMetaClause(i: MetaCompileInput): MetaCompileResult {
 }
 
 // quoteIfNeeded wraps a value in double quotes when it contains
-// whitespace, parens, brackets, or quotes — characters the DSL parser
+// whitespace, parens, brackets, or quotes - characters the DSL parser
 // would otherwise terminate on. Mirrors filter.valueNeedsQuoting on
 // the server. Escapes backslash and double-quote inside quoted values.
 function quoteIfNeeded(raw: string): string {
@@ -922,7 +922,7 @@ function QueryTabPanel({ value, onChange }: QueryTabProps) {
     e.preventDefault()
     const next = draft.trim() || undefined
     if (next === value.q) return
-    // Submitting the Query tab strips any NLP echo — the user is
+    // Submitting the Query tab strips any NLP echo - the user is
     // editing the DSL directly now.
     onChange({
       ...value,
@@ -999,7 +999,7 @@ export function countActiveColumnFilters(v: FilterValues): number {
 }
 
 // parseQClauses splits a top-level `field:value AND field:value`
-// query into individual chips. Lightweight tokenizer — it doesn't
+// query into individual chips. Lightweight tokenizer - it doesn't
 // validate the DSL syntax (the server does that) and bails to
 // "single chip with the full string" for queries it can't split
 // cleanly (parens, nested expressions). Matches the dashboard's
@@ -1015,7 +1015,7 @@ export function parseQClauses(q: string): ParsedClause[] {
   const trimmed = q.trim()
   if (!trimmed) return []
   // If the query contains parens (within-field OR, range syntax),
-  // we can't trivially split — fall back to one chip for the whole
+  // we can't trivially split - fall back to one chip for the whole
   // expression so the chip × still works as a clear-all.
   if (/[()]/.test(trimmed)) return [{ label: trimmed, raw: trimmed }]
   return trimmed

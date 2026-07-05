@@ -14,7 +14,7 @@ export interface EventDetailProps {
   onClose: () => void
   // theme propagates the parent's theme into the portal so the modal's
   // CSS variables (--audit-trail-bg, --audit-trail-fg, --audit-trail-overlay, …) still resolve
-  // — the portal target is document.body, which sits outside .audit-trail-root.
+  // - the portal target is document.body, which sits outside .audit-trail-root.
   theme?: 'light' | 'dark'
 }
 
@@ -54,7 +54,7 @@ export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProp
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     } catch {
-      // Clipboard permission denied or unsupported — silently no-op.
+      // Clipboard permission denied or unsupported - silently no-op.
       // The user can still select the text manually.
     }
   }
@@ -85,7 +85,7 @@ export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProp
         </h2>
         <p className="audit-trail-inspect-subtitle">
           <span className="audit-trail-inspect-subtitle-line">
-            <code>{event.action || '—'}</code>
+            <code>{event.action || '-'}</code>
           </span>
           <span className="audit-trail-inspect-subtitle-line">
             {formatHeaderTimestamp(event.occurred_at)}
@@ -136,7 +136,7 @@ export function EventDetail({ event, onClose, theme = 'light' }: EventDetailProp
             <div className="audit-trail-code-block-wrap">
               <pre className="audit-trail-code-block">
                 {/* dangerouslySetInnerHTML carries pre-escaped HTML
-                    from highlightJSON — every value-bearing slot in
+                    from highlightJSON - every value-bearing slot in
                     the source string is HTML-escaped before the
                     token regex runs, so injected user data renders
                     as text. */}
@@ -226,11 +226,11 @@ function CheckIcon() {
 }
 
 // formatHeaderTimestamp renders an ISO timestamp as
-// "Month D, YYYY HH:MM:SS.mmm UTC" — matches the upstream events UI
+// "Month D, YYYY HH:MM:SS.mmm UTC" - matches the upstream events UI
 // header. Always UTC so two readers in different timezones see the
 // same string when comparing notes on an event.
 function formatHeaderTimestamp(rfc3339: string | undefined): string {
-  if (!rfc3339) return '—'
+  if (!rfc3339) return '-'
   const d = new Date(rfc3339)
   if (Number.isNaN(d.getTime())) return rfc3339
   const month = MONTHS[d.getUTCMonth()] ?? ''
@@ -288,7 +288,7 @@ function escapeHTML(s: string): string {
 }
 
 // ============================================================
-// Metadata tab — flat key/value table. Renders each top-level
+// Metadata tab - flat key/value table. Renders each top-level
 // metadata field as one row with type hint + value. Nested
 // objects / arrays render compactly so the column doesn't blow
 // out; users still get the full picture from the Raw tab.

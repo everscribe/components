@@ -191,7 +191,7 @@ export class AuditTrailElement extends HTMLElement {
 
   // storageKey returns a localStorage key namespaced by the current
   // token's project (sub) and tenant. Returns null when the element
-  // isn't ready or the token has no usable sub — callers treat null
+  // isn't ready or the token has no usable sub - callers treat null
   // as "skip persistence."
   private storageKey(suffix: 'cols' | 'filters'): string | null {
     if (this.bootstrap.phase !== 'ready') return null
@@ -495,7 +495,7 @@ export class AuditTrailElement extends HTMLElement {
         if (typeof c === 'string') this.visibleSet.delete(c)
       }
     } catch {
-      // Private mode, quota, or malformed JSON — fall through to defaults.
+      // Private mode, quota, or malformed JSON - fall through to defaults.
     }
   }
 
@@ -506,7 +506,7 @@ export class AuditTrailElement extends HTMLElement {
       const hidden = this.availableColumns.filter((c) => !this.visibleSet.has(c))
       globalThis.localStorage?.setItem(key, JSON.stringify(hidden))
     } catch {
-      // Private mode, quota — silently ignore.
+      // Private mode, quota - silently ignore.
     }
   }
 
@@ -522,7 +522,7 @@ export class AuditTrailElement extends HTMLElement {
       if (range !== '24h' && range !== '7d' && range !== '30d' && range !== 'custom' && range !== 'all') return
       this.filters = parsed as FilterValues
     } catch {
-      // Malformed JSON / storage error — keep defaults.
+      // Malformed JSON / storage error - keep defaults.
     }
   }
 
@@ -532,7 +532,7 @@ export class AuditTrailElement extends HTMLElement {
     try {
       globalThis.localStorage?.setItem(key, JSON.stringify(this.filters))
     } catch {
-      // Private mode, quota — silently ignore.
+      // Private mode, quota - silently ignore.
     }
   }
 
@@ -680,7 +680,7 @@ export class AuditTrailElement extends HTMLElement {
 
     const out: Node[] = [this.renderToolbar()]
 
-    // Active-filter chips sit between the toolbar and the panel —
+    // Active-filter chips sit between the toolbar and the panel -
     // visible whenever there's at least one active filter, even
     // when the panel is collapsed.
     const chips = renderFilterChips({

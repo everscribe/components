@@ -13,7 +13,7 @@
 
 Framework-agnostic core for [Everscribe](https://everscribe.io) embeddable audit-trail UI. The data layer behind [`@everscribe/components-react`](https://github.com/everscribe/components/tree/main/packages/react#readme) and [`@everscribe/components-element`](https://github.com/everscribe/components/tree/main/packages/element#readme): the API client, types, JWT parsing, diff renderer, and observable stores that drive the UI.
 
-You usually don't install this directly — install the React or web-component package and you get this transitively. Reach for `core` when you want to **build your own UI** on top of Everscribe's data layer.
+You usually don't install this directly - install the React or web-component package and you get this transitively. Reach for `core` when you want to **build your own UI** on top of Everscribe's data layer.
 
 Part of [@everscribe/components](https://github.com/everscribe/components#readme). Token minting, the refresh chain, security, and rate limits are covered in the [web components guide](https://everscribe.io/docs/web-components/overview).
 
@@ -31,7 +31,7 @@ Two observable stores back the UI. Each manages its own lifecycle (initial fetch
 
 ### `createEventsStore(config)`
 
-Returns `EventsStore` — events list, pagination, polling, token refresh on 401.
+Returns `EventsStore` - events list, pagination, polling, token refresh on 401.
 
 ```ts
 import { createEventsStore } from '@everscribe/components-core'
@@ -58,13 +58,13 @@ store.dispose()
 unsubscribe()
 ```
 
-`pollInterval > 0` enables polling. Below `1000` ms is clamped with a `console.warn`. The poll loop pauses when `document.visibilityState === 'hidden'` and resumes on `visibilitychange`. Polling is also disabled whenever `before` is set — a closed-upper-bound time window can't admit newer events.
+`pollInterval > 0` enables polling. Below `1000` ms is clamped with a `console.warn`. The poll loop pauses when `document.visibilityState === 'hidden'` and resumes on `visibilitychange`. Polling is also disabled whenever `before` is set - a closed-upper-bound time window can't admit newer events.
 
 On a 401, the store calls `onTokenExpired` (if set) or fetches `tokenEndpoint`, swaps the token in-place, and retries the request. If both are absent the store transitions to `status: 'expired'`.
 
 ### `createDistinctValuesStore(config)`
 
-Returns `DistinctValuesStore` — fetches the three filter-dropdown source lists (`actions`, `actorTypes`, `targetTypes`) once per token. Failures are swallowed silently; an empty dropdown is strictly better UX than blocking the table render on a 500.
+Returns `DistinctValuesStore` - fetches the three filter-dropdown source lists (`actions`, `actorTypes`, `targetTypes`) once per token. Failures are swallowed silently; an empty dropdown is strictly better UX than blocking the table render on a 500.
 
 ```ts
 import { createDistinctValuesStore } from '@everscribe/components-core'
@@ -80,14 +80,14 @@ unsubscribe()
 
 ### `parseClaims(token)`
 
-Decodes an embed JWT's payload into an `EmbedClaims` object. Returns `null` for null/undefined input or malformed tokens. No signature verification — the server enforces every read.
+Decodes an embed JWT's payload into an `EmbedClaims` object. Returns `null` for null/undefined input or malformed tokens. No signature verification - the server enforces every read.
 
 ```ts
 import { parseClaims } from '@everscribe/components-core'
 
 const claims = parseClaims(token)
 if (claims?.columns) {
-  // Token scopes the column set — the picker should only show these.
+  // Token scopes the column set - the picker should only show these.
 }
 ```
 

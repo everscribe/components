@@ -30,7 +30,7 @@ const CHECK_ICON_SVG =
   '<polyline points="20 6 9 17 4 12"></polyline></svg>'
 
 // openEventDetail mounts the inspect modal as a child of document.body
-// — the React adapter uses createPortal for this; in vanilla we just
+// - the React adapter uses createPortal for this; in vanilla we just
 // append. Returns a dispose function that removes the modal and tears
 // down listeners. User-initiated dismissals (Esc, backdrop, X) call
 // dispose() and then opts.onClose. Parent-initiated dismissals call
@@ -63,7 +63,7 @@ export function openEventDetail(opts: EventDetailOptions): () => void {
   ) as HTMLButtonElement
 
   // Modal contents are built lazily because the Raw/Diff tab swap
-  // re-renders the panel — keeping this in a closure also avoids a
+  // re-renders the panel - keeping this in a closure also avoids a
   // separate "selected tab" element ref.
   const panelContainer = h('div')
 
@@ -87,7 +87,7 @@ export function openEventDetail(opts: EventDetailOptions): () => void {
       )
     }
     // Default to Raw. highlightedJson carries pre-escaped HTML
-    // with token <span>s — set via the `html` attribute so the
+    // with token <span>s - set via the `html` attribute so the
     // browser interprets the tags rather than text-escaping them.
     const codeBlock = h(
       'pre',
@@ -117,7 +117,7 @@ export function openEventDetail(opts: EventDetailOptions): () => void {
             if (!disposed && tab === 'raw') renderPanel()
           }, 1500)
         } catch {
-          // Clipboard permission denied or unsupported — silent no-op.
+          // Clipboard permission denied or unsupported - silent no-op.
         }
       })()
     })
@@ -139,7 +139,7 @@ export function openEventDetail(opts: EventDetailOptions): () => void {
     h(
       'span',
       { class: 'audit-trail-inspect-subtitle-line' },
-      h('code', null, event.action || '—'),
+      h('code', null, event.action || '-'),
     ),
     h(
       'span',
@@ -219,7 +219,7 @@ export function openEventDetail(opts: EventDetailOptions): () => void {
 
   document.body.appendChild(portal)
   renderPanel()
-  // Defer focus to the next frame — focusing during append can race
+  // Defer focus to the next frame - focusing during append can race
   // with the parent's render and lose to whatever pulls focus next.
   queueMicrotask(() => {
     if (!disposed) closeBtn.focus()
@@ -312,11 +312,11 @@ function renderDiffTable(lines: DiffLine[]): HTMLElement {
 }
 
 // formatHeaderTimestamp renders an ISO timestamp as
-// "Month D, YYYY HH:MM:SS.mmm UTC" — matches the upstream events UI
+// "Month D, YYYY HH:MM:SS.mmm UTC" - matches the upstream events UI
 // header. Always UTC so two readers in different timezones see the
 // same string when comparing notes on an event.
 function formatHeaderTimestamp(rfc3339: string | undefined): string {
-  if (!rfc3339) return '—'
+  if (!rfc3339) return '-'
   const d = new Date(rfc3339)
   if (Number.isNaN(d.getTime())) return rfc3339
   const month = MONTHS[d.getUTCMonth()] ?? ''
@@ -369,7 +369,7 @@ function escapeHTML(s: string): string {
 }
 
 // ============================================================
-// Metadata tab — flat key/value table. Renders each top-level
+// Metadata tab - flat key/value table. Renders each top-level
 // metadata field as one row with type hint + value. Nested
 // objects / arrays render compactly so the column doesn't blow
 // out; users still get the full picture from the Raw tab.

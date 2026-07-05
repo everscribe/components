@@ -14,7 +14,7 @@ interface Chip {
 // ActiveFilterChips renders one chip per active column filter and
 // one chip per top-level DSL clause in `q`. Clicking × strips that
 // single filter (or rebuilds q without the clause). When nothing is
-// active the component renders nothing — the parent decides whether
+// active the component renders nothing - the parent decides whether
 // to leave the row visible at all.
 export function ActiveFilterChips({ value, onChange }: ActiveFilterChipsProps) {
   const chips: Chip[] = []
@@ -39,7 +39,7 @@ export function ActiveFilterChips({ value, onChange }: ActiveFilterChipsProps) {
   colChip('resultStatus', 'Result', value.resultStatus)
   colChip('originIP', 'Origin IP', value.originIP)
 
-  // DSL clauses get their own chip each — removing one re-serializes
+  // DSL clauses get their own chip each - removing one re-serializes
   // q without that clause so the rest stay applied.
   if (value.q) {
     for (const clause of parseQClauses(value.q)) {
@@ -51,7 +51,7 @@ export function ActiveFilterChips({ value, onChange }: ActiveFilterChipsProps) {
             ...value,
             q: nextQ,
             // If this was the last DSL clause and the q came from an
-            // NLP translation, clear the echo fields too — there's
+            // NLP translation, clear the echo fields too - there's
             // nothing left to attribute to "you asked".
             nlpQ: nextQ ? value.nlpQ : undefined,
             nlpExplanation: nextQ ? value.nlpExplanation : undefined,

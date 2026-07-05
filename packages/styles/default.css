@@ -1,4 +1,4 @@
-/* @everscribe/components-styles — default theme.
+/* @everscribe/components-styles - default theme.
  *
  * Customize via CSS variables on `.audit-trail-root`, or override class names
  * directly. The full token surface is defined in the first block below.
@@ -52,7 +52,7 @@
 }
 
 /* Component-scope styling. The .audit-trail-portal wrapper deliberately
- * carries only the tokens — backgrounds and font come from its
+ * carries only the tokens - backgrounds and font come from its
  * children (the modal cards) so the wrapper itself is invisible. */
 .audit-trail-root {
   font-family: var(--audit-trail-font-family);
@@ -832,7 +832,7 @@
   /* margin-bottom: -1px lets the tab's 2px bottom border overlap the
    * row's 1px bottom border so the active indicator visually "joins"
    * the divider instead of stacking next to it. border-radius: 0
-   * neutralizes the UA default on <button> — without it the bottom
+   * neutralizes the UA default on <button> - without it the bottom
    * corners look rounded under the colored indicator. */
   margin: 0 0 -1px;
   padding: var(--audit-trail-spacing-sm) var(--audit-trail-spacing);
@@ -1031,7 +1031,7 @@
 }
 
 /* ============================================================
-   AI tab — NLP form, translation banner, unsupported list.
+   AI tab - NLP form, translation banner, unsupported list.
    ============================================================ */
 .audit-trail-nlp-form {
   display: flex;
@@ -1112,7 +1112,7 @@
 }
 
 /* ============================================================
-   Query tab — DSL input + Search button.
+   Query tab - DSL input + Search button.
    ============================================================ */
 .audit-trail-query-form {
   display: flex;
@@ -1145,7 +1145,7 @@
   margin-top: 0.25rem;
 }
 
-/* In-button spinner — mirrors the dashboard's loading affordance.
+/* In-button spinner - mirrors the dashboard's loading affordance.
    Used while the AI tab waits on the LLM round-trip. */
 .audit-trail-button-spinner {
   display: inline-block;

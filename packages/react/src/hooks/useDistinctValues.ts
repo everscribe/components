@@ -20,7 +20,7 @@ export interface UseDistinctValuesOptions {
 const NOOP_UNSUB = () => {}
 
 // useDistinctValues fetches the three filter-dropdown source lists once
-// per token. Failures are swallowed silently — an empty dropdown is
+// per token. Failures are swallowed silently - an empty dropdown is
 // strictly better UX than blocking the table render on a 500.
 export function useDistinctValues(opts: UseDistinctValuesOptions): DistinctValues {
   const [store, setStore] = useState<DistinctValuesStore | null>(null)

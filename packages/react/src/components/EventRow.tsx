@@ -73,13 +73,13 @@ function getField(event: Event, key: string): unknown {
 
 // renderResult shows the status as a small pill so the table cell
 // reads at a glance ("ok" / "error") instead of the generic
-// {N fields} fallback. The numeric code is intentionally omitted —
+// {N fields} fallback. The numeric code is intentionally omitted -
 // it lives in the Raw tab of the inspect modal for callers who need it.
 function renderResult(value: unknown): ReactNode {
-  if (value == null || typeof value !== 'object') return '—'
+  if (value == null || typeof value !== 'object') return '-'
   const obj = value as { status?: unknown }
   const status = typeof obj.status === 'string' ? obj.status : ''
-  if (!status) return '—'
+  if (!status) return '-'
   return (
     <span className={`audit-trail-status audit-trail-status-${cssToken(status)}`}>{status}</span>
   )
@@ -89,7 +89,7 @@ function renderResult(value: unknown): ReactNode {
 // scans for (IP, hostname). Falls back to the generic object summary
 // only when none of those are present.
 function renderOrigin(value: unknown): ReactNode {
-  if (value == null || typeof value !== 'object') return '—'
+  if (value == null || typeof value !== 'object') return '-'
   const obj = value as Record<string, unknown>
   for (const key of ['ip', 'hostname', 'host']) {
     const v = obj[key]
@@ -100,19 +100,19 @@ function renderOrigin(value: unknown): ReactNode {
 
 // renderPresence collapses arbitrary-shape JSON columns (change,
 // metadata) to a single "View" affordance when content exists, else
-// "—". The full payload is still reachable via the row's detail
+// "-". The full payload is still reachable via the row's detail
 // panel; the cell just signals presence.
 function renderPresence(value: unknown): ReactNode {
-  if (value == null) return '—'
+  if (value == null) return '-'
   if (typeof value === 'object') {
     const keys = Object.keys(value as object)
-    if (keys.length === 0) return '—'
+    if (keys.length === 0) return '-'
     return <span className="audit-trail-cell-presence">View</span>
   }
   if (typeof value === 'string' && value.length > 0) {
     return <span className="audit-trail-cell-presence">View</span>
   }
-  return '—'
+  return '-'
 }
 
 function summarizeObject(value: object): string {
@@ -122,7 +122,7 @@ function summarizeObject(value: object): string {
     if (typeof v === 'string' && v.length > 0) return v
   }
   const keys = Object.keys(obj)
-  if (keys.length === 0) return '—'
+  if (keys.length === 0) return '-'
   return `{${keys.length} ${keys.length === 1 ? 'field' : 'fields'}}`
 }
 

@@ -72,7 +72,7 @@ export function ExportModal({ open, onClose, onDownload }: ExportModalProps) {
         </h2>
         <p className="audit-trail-export-blurb">
           The current filters and time range are applied. Capped at 100,000 rows
-          — narrow the filters or time window if you hit it.
+          - narrow the filters or time window if you hit it.
         </p>
 
         <div className="audit-trail-export-options">

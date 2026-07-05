@@ -22,7 +22,7 @@ export interface UseEventsOptions {
   onError?: (err: Error) => void
   // Server-side filters. Changes to any of these reset pagination and
   // refetch from scratch. When `before` is set the polling loop is
-  // disabled — a closed time window can't get newer events.
+  // disabled - a closed time window can't get newer events.
   since?: string
   before?: string
   action?: string

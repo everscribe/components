@@ -1,7 +1,7 @@
 {
   "name": "everscribe-components",
   "private": true,
-  "description": "Everscribe embeddable components — multi-framework monorepo.",
+  "description": "Everscribe embeddable components - multi-framework monorepo.",
   "license": "MIT",
   "repository": {
     "type": "git",
