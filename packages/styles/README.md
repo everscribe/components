@@ -1,3 +1,12 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/everscribe/components/main/assets/everscribe.svg" alt="Everscribe" height="64">
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@everscribe/components-styles"><img src="https://img.shields.io/npm/v/@everscribe/components-styles.svg" alt="npm"></a>
+  <a href="https://github.com/everscribe/components/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+</p>
+
 # @everscribe/components-styles
 
 Default theme stylesheet for [@everscribe/components-react](https://github.com/everscribe/components/tree/main/packages/react#readme) and [@everscribe/components-element](https://github.com/everscribe/components/tree/main/packages/element#readme). Required by both — install it alongside whichever component package you're using.

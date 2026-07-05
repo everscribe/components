@@ -71,7 +71,7 @@ export interface ChangeField {
 
 /**
  * GenerateNLPFiltersRequest is the JSON body for
- * POST /v1/embed/events/nlp. Mirror of the monorepo's types/nlp.go.
+ * POST /v1/embed/events/nlp. Mirrors the server's NLP response shape.
  */
 export interface GenerateNLPFiltersRequest {
   q: string

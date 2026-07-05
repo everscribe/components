@@ -1,10 +1,21 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/everscribe/components/main/assets/everscribe.svg" alt="Everscribe" height="64" align="middle">
+  &nbsp;&nbsp;<b>+</b>&nbsp;&nbsp;
+  <img src="https://raw.githubusercontent.com/everscribe/components/main/assets/typescript.svg" alt="TypeScript" height="56" align="middle">
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@everscribe/components-core"><img src="https://img.shields.io/npm/v/@everscribe/components-core.svg" alt="npm"></a>
+  <a href="https://github.com/everscribe/components/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+</p>
+
 # @everscribe/components-core
 
 Framework-agnostic core for [Everscribe](https://everscribe.io) embeddable audit-trail UI. The data layer behind [`@everscribe/components-react`](https://github.com/everscribe/components/tree/main/packages/react#readme) and [`@everscribe/components-element`](https://github.com/everscribe/components/tree/main/packages/element#readme): the API client, types, JWT parsing, diff renderer, and observable stores that drive the UI.
 
 You usually don't install this directly — install the React or web-component package and you get this transitively. Reach for `core` when you want to **build your own UI** on top of Everscribe's data layer.
 
-Part of [@everscribe/components](https://github.com/everscribe/components#readme) — see the root README for token minting, refresh chain, security, and rate limits.
+Part of [@everscribe/components](https://github.com/everscribe/components#readme). Token minting, the refresh chain, security, and rate limits are covered in the [web components guide](https://everscribe.io/docs/web-components/overview).
 
 ## Install
 

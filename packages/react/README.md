@@ -1,8 +1,19 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/everscribe/components/main/assets/everscribe.svg" alt="Everscribe" height="64" align="middle">
+  &nbsp;&nbsp;<b>+</b>&nbsp;&nbsp;
+  <img src="https://raw.githubusercontent.com/everscribe/components/main/assets/react.svg" alt="React" height="56" align="middle">
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@everscribe/components-react"><img src="https://img.shields.io/npm/v/@everscribe/components-react.svg" alt="npm"></a>
+  <a href="https://github.com/everscribe/components/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+</p>
+
 # @everscribe/components-react
 
 Embeddable React component for [Everscribe](https://everscribe.io) audit events. Drop `<AuditTrail />` into your app, hand it a short-lived embed token, and your users see a live, scoped view of their audit trail.
 
-Part of [@everscribe/components](https://github.com/everscribe/components#readme) — see the root README for token minting, refresh chain, theming, security, rate limits, claim-driven UI, and other shared concepts.
+Part of [@everscribe/components](https://github.com/everscribe/components#readme). Token minting, the refresh chain, theming, security, rate limits, and claim-driven UI are covered in the [web components guide](https://everscribe.io/docs/web-components/overview).
 
 ## Install
 
@@ -23,7 +34,7 @@ export function AuditPage() {
 }
 ```
 
-`tokenEndpoint` is a route on **your** server (not Everscribe's) that returns a freshly minted embed token. The component fetches it on mount, holds it in memory, and re-fetches from the same endpoint on 401. Your project API key never touches the browser. See [Minting tokens](https://github.com/everscribe/components#minting-tokens-your-backend) for the backend side.
+`tokenEndpoint` is a route on **your** server (not Everscribe's) that returns a freshly minted embed token. The component fetches it on mount, holds it in memory, and re-fetches from the same endpoint on 401. Your project API key never touches the browser. See [Minting tokens](https://everscribe.io/docs/web-components/prerequisites) for the backend side.
 
 If your React app and backend share an origin, a relative path (`/api/embed-token`) works too.
 

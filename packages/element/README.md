@@ -1,8 +1,17 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/everscribe/components/main/assets/everscribe.svg" alt="Everscribe" height="64">
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@everscribe/components-element"><img src="https://img.shields.io/npm/v/@everscribe/components-element.svg" alt="npm"></a>
+  <a href="https://github.com/everscribe/components/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+</p>
+
 # @everscribe/components-element
 
 Framework-agnostic `<audit-trail>` custom element for [Everscribe](https://everscribe.io) audit events. Drop the tag into any HTML, in any framework — plain JS, Vue, Svelte, Solid, Angular — and you get the same live, scoped audit trail UI you'd get from the React component.
 
-Part of [@everscribe/components](https://github.com/everscribe/components#readme) — see the root README for token minting, refresh chain, theming, security, rate limits, claim-driven UI, and other shared concepts.
+Part of [@everscribe/components](https://github.com/everscribe/components#readme). Token minting, the refresh chain, theming, security, rate limits, and claim-driven UI are covered in the [web components guide](https://everscribe.io/docs/web-components/overview).
 
 ## Install
 
@@ -23,7 +32,7 @@ The element registers itself as `<audit-trail>` on import (idempotent — safe t
 <audit-trail token-endpoint="/api/embed-token"></audit-trail>
 ```
 
-`token-endpoint` is a route on **your** server (not Everscribe's) that returns a freshly minted embed token. The element fetches it on mount, holds it in memory, and re-fetches from the same endpoint on 401. Your project API key never touches the browser. See [Minting tokens](https://github.com/everscribe/components#minting-tokens-your-backend) for the backend side.
+`token-endpoint` is a route on **your** server (not Everscribe's) that returns a freshly minted embed token. The element fetches it on mount, holds it in memory, and re-fetches from the same endpoint on 401. Your project API key never touches the browser. See [Minting tokens](https://everscribe.io/docs/web-components/prerequisites) for the backend side.
 
 If you have a token already, pass it directly:
 
