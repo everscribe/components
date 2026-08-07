@@ -346,7 +346,21 @@ export async function fetchTokenViaOpts(opts: TokenSourceOptions): Promise<strin
   try {
     if (opts.onTokenExpired) return await opts.onTokenExpired()
     if (opts.tokenEndpoint) {
-      const res = await fetch(opts.tokenEndpoint, { credentials: 'include' })
+      // POST, not GET. Minting a token is not a safe idempotent
+      // read: it issues a bearer credential and consumes quota. GET
+      // also made the response cacheable by default, so a CDN or
+      // shared proxy in front of the customer's app could serve one
+      // user's tenant-scoped token to another. POST responses are not
+      // cached without an explicit opt-in, which makes the safe
+      // outcome the default rather than something every handler
+      // author has to remember.
+      //
+      // No body and no custom headers, so this stays a CORS simple
+      // request and adds no preflight.
+      const res = await fetch(opts.tokenEndpoint, {
+        method: 'POST',
+        credentials: 'include',
+      })
       if (!res.ok) return null
       const body = (await res.json()) as { token?: string }
       return body.token ?? null
