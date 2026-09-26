@@ -40,7 +40,7 @@
 Start with the [prerequisites](https://everscribe.io/docs/web-components/prerequisites)
 for the embed flow, token minting, refresh, and secret rotation. Per-package reference:
 
-| Package | npm | Documentation |
+| Github | Npm | Live Docs |
 |---|---|---|
 | [`@everscribe/components-react`](packages/react#readme) | [![npm](https://img.shields.io/npm/v/@everscribe/components-react)](https://www.npmjs.com/package/@everscribe/components-react) | [React](https://everscribe.io/docs/web-components/react) |
 | [`@everscribe/components-element`](packages/element#readme) | [![npm](https://img.shields.io/npm/v/@everscribe/components-element)](https://www.npmjs.com/package/@everscribe/components-element) | [Web component](https://everscribe.io/docs/web-components/vanilla) |
