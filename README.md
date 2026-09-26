@@ -40,12 +40,12 @@
 Start with the [prerequisites](https://everscribe.io/docs/web-components/prerequisites)
 for the embed flow, token minting, refresh, and secret rotation. Per-package reference:
 
-| Package | Documentation |
-|---|---|
-| [`@everscribe/components-react`](packages/react#readme) | [React](https://everscribe.io/docs/web-components/react) |
-| [`@everscribe/components-element`](packages/element#readme) | [Web component](https://everscribe.io/docs/web-components/vanilla) |
-| [`@everscribe/components-core`](packages/core#readme) | [Core](https://everscribe.io/docs/web-components/core) |
-| [`@everscribe/components-styles`](packages/styles#readme) | [Styles](https://everscribe.io/docs/web-components/styles) |
+| Package | npm | Documentation |
+|---|---|---|
+| [`@everscribe/components-react`](packages/react#readme) | [![npm](https://img.shields.io/npm/v/@everscribe/components-react)](https://www.npmjs.com/package/@everscribe/components-react) | [React](https://everscribe.io/docs/web-components/react) |
+| [`@everscribe/components-element`](packages/element#readme) | [![npm](https://img.shields.io/npm/v/@everscribe/components-element)](https://www.npmjs.com/package/@everscribe/components-element) | [Web component](https://everscribe.io/docs/web-components/vanilla) |
+| [`@everscribe/components-core`](packages/core#readme) | [![npm](https://img.shields.io/npm/v/@everscribe/components-core)](https://www.npmjs.com/package/@everscribe/components-core) | [Core](https://everscribe.io/docs/web-components/core) |
+| [`@everscribe/components-styles`](packages/styles#readme) | [![npm](https://img.shields.io/npm/v/@everscribe/components-styles)](https://www.npmjs.com/package/@everscribe/components-styles) | [Styles](https://everscribe.io/docs/web-components/styles) |
 
 > **Vue, Angular, and Svelte** (shown above) are covered by [`@everscribe/components-core`](packages/core#readme), the framework-agnostic data layer whose observable stores plug into any framework's reactivity, so you can build the audit-trail UI in whatever stack you use. The `<audit-trail>` [Web component](packages/element#readme) is a drop-in alternative that works in all three as well.
 
