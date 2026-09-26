@@ -1,6 +1,6 @@
 {
   "name": "@everscribe/components-react",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Embeddable React component for Everscribe audit events.",
   "license": "MIT",
   "repository": {
@@ -36,6 +36,7 @@
     "LICENSE"
   ],
   "scripts": {
+    "prepublishOnly": "pnpm run build",
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",

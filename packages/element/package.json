@@ -1,6 +1,6 @@
 {
   "name": "@everscribe/components-element",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Framework-agnostic <audit-trail> custom element for Everscribe.",
   "license": "MIT",
   "repository": {
@@ -37,6 +37,7 @@
     "LICENSE"
   ],
   "scripts": {
+    "prepublishOnly": "pnpm run build",
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
