@@ -151,9 +151,7 @@ function tabClass(active: boolean): string {
     : 'audit-trail-filter-mode'
 }
 
-// ============================================================
 // AI tab
-// ============================================================
 
 interface AITabProps {
   value: FilterValues
@@ -282,9 +280,7 @@ function nlpErrorMessage(reason: NLPErrorReason): string {
   }
 }
 
-// ============================================================
 // Filters tab
-// ============================================================
 
 interface FiltersTabProps {
   value: FilterValues
@@ -563,13 +559,11 @@ function FiltersTabPanel({ value, onChange, distinct, onApplied }: FiltersTabPro
   )
 }
 
-// ============================================================
 // Metadata / changed-field filter section. Lives inside the
 // Filters tab. The user composes a single DSL clause via picker
 // inputs and clicks Add filter to apply - which replaces q
 // (and strips any AI carry-over), mirroring the dashboard's
 // "Filters tab starts clean" behavior.
-// ============================================================
 
 type AddFilterVariant = 'metadata' | 'change-field' | 'change-before' | 'change-after'
 type MetadataOperator =
@@ -900,9 +894,7 @@ function quoteKeyIfNeeded(raw: string): string {
   return '"' + raw + '"'
 }
 
-// ============================================================
 // Query tab
-// ============================================================
 
 interface QueryTabProps {
   value: FilterValues
@@ -964,9 +956,7 @@ function QueryTabPanel({ value, onChange }: QueryTabProps) {
   )
 }
 
-// ============================================================
 // Active filter counters
-// ============================================================
 
 // hasAnyColumnFilter is the predicate the initial-tab logic uses.
 function hasAnyColumnFilter(v: FilterValues): boolean {

@@ -87,9 +87,7 @@ export function pickInitialTab(
   return 'filters'
 }
 
-// ============================================================
 // Top-level renderer
-// ============================================================
 
 export function renderFiltersPanel(opts: FiltersPanelOptions): HTMLElement {
   const { claims, activeTab } = opts
@@ -146,9 +144,7 @@ function renderTabBar(opts: TabBarOptions): HTMLElement {
   )
 }
 
-// ============================================================
 // Prompt (AI) tab
-// ============================================================
 
 function renderAITabPanel(opts: FiltersPanelOptions): HTMLElement {
   const { value, nlpState, onNLPSubmit } = opts
@@ -278,11 +274,9 @@ function renderUnsupportedList(items: string[]): HTMLElement {
   )
 }
 
-// ============================================================
 // Filters tab - time-range presets, column filters, metadata builder.
 // Column filters are draft-based: nothing commits until "Add filters"
 // is clicked. Time-range presets apply immediately (view selector).
-// ============================================================
 
 function renderFiltersTabPanel(opts: FiltersPanelOptions): HTMLElement {
   const { value, distinct, onChange, onApplied } = opts
@@ -552,10 +546,8 @@ function buildDateInput(value: string): HTMLInputElement {
   return input
 }
 
-// ============================================================
 // Metadata / changed-field builder. One DSL clause composed from
 // picker inputs; Add filter replaces q (and clears NLP echo).
-// ============================================================
 
 type AddFilterVariant = 'metadata' | 'change-field' | 'change-before' | 'change-after'
 type MetadataOperator =
@@ -898,9 +890,7 @@ function quoteKeyIfNeeded(raw: string): string {
   return '"' + raw + '"'
 }
 
-// ============================================================
 // Query tab - explicit-submit DSL input.
-// ============================================================
 
 function renderQueryTabPanel(opts: FiltersPanelOptions): HTMLElement {
   const { value, onChange } = opts
@@ -974,10 +964,8 @@ function renderQueryTabPanel(opts: FiltersPanelOptions): HTMLElement {
   )
 }
 
-// ============================================================
 // Active-filter chips. Rendered above the panel (by AuditTrailElement),
 // not inside it.
-// ============================================================
 
 export interface FilterChipsOptions {
   value: FilterValues
@@ -1068,9 +1056,7 @@ export function renderFilterChips(opts: FilterChipsOptions): HTMLElement | null 
   )
 }
 
-// ============================================================
 // Counters / helpers (used by AuditTrailElement).
-// ============================================================
 
 function hasAnyColumnFilter(v: FilterValues): boolean {
   return !!(
@@ -1126,9 +1112,7 @@ export function removeClauseFromQ(q: string, raw: string): string | undefined {
   return remaining.map((c) => c.raw).join(' AND ')
 }
 
-// ============================================================
 // Time-range resolution (used by AuditTrailElement on every fetch).
-// ============================================================
 
 export function resolveTimeBounds(filters: FilterValues): {
   since?: string

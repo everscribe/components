@@ -254,12 +254,10 @@ function inspectTabClass(active: boolean): string {
     : 'audit-trail-inspect-tab'
 }
 
-// ============================================================
 // JSON syntax highlighter for the Raw tab. Walks the pretty-
 // printed source, escapes HTML, and wraps tokens in <span>
 // classes the CSS colors. Punctuation (braces, commas, colons)
 // keeps the default text color.
-// ============================================================
 function highlightJSON(json: string): string {
   const safe = escapeHTML(json)
   return safe.replace(
@@ -287,12 +285,10 @@ function escapeHTML(s: string): string {
     .replace(/>/g, '&gt;')
 }
 
-// ============================================================
 // Metadata tab - flat key/value table. Renders each top-level
 // metadata field as one row with type hint + value. Nested
 // objects / arrays render compactly so the column doesn't blow
 // out; users still get the full picture from the Raw tab.
-// ============================================================
 
 interface MetadataRow {
   key: string
