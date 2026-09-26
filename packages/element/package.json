@@ -44,8 +44,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@everscribe/components-core": "workspace:*",
-    "@everscribe/components-styles": "workspace:*"
+    "@everscribe/components-core": "workspace:^",
+    "@everscribe/components-styles": "workspace:^"
   },
   "devDependencies": {
     "tsup": "^8.3.0",

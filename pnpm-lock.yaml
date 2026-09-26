@@ -27,10 +27,10 @@ importers:
   packages/element:
     dependencies:
       '@everscribe/components-core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@everscribe/components-styles':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../styles
     devDependencies:
       tsup:
@@ -43,10 +43,10 @@ importers:
   packages/react:
     dependencies:
       '@everscribe/components-core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@everscribe/components-styles':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../styles
     devDependencies:
       '@types/react':

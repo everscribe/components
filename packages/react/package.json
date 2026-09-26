@@ -43,8 +43,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@everscribe/components-core": "workspace:*",
-    "@everscribe/components-styles": "workspace:*"
+    "@everscribe/components-core": "workspace:^",
+    "@everscribe/components-styles": "workspace:^"
   },
   "peerDependencies": {
     "react": ">=18",
