@@ -29,6 +29,15 @@
   --audit-trail-danger: #cf222e;
   --audit-trail-overlay: rgba(0, 0, 0, 0.5);
 
+  /* Secondary surface plus the info and error pairs. These were consumed
+   * with inline fallbacks only, so they never followed the dark theme.
+   * Light values match those fallbacks exactly. */
+  --audit-trail-surface-2: #f9fafb;
+  --audit-trail-info-bg: #dbeafe;
+  --audit-trail-info-fg: #1d4ed8;
+  --audit-trail-error-bg: #fee2e2;
+  --audit-trail-error-fg: #991b1b;
+
   /* ---- Typography tokens ---- */
   --audit-trail-font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -88,6 +97,16 @@
   --audit-trail-danger: #f85149;
   --audit-trail-overlay: rgba(0, 0, 0, 0.7);
   --audit-trail-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  /* surface-2 matches surface here: the light pair (#f6f8fa vs #f9fafb)
+   * differs sub-perceptibly, and #161b22 is the surface that reads
+   * correctly against this background. The info and error pairs are
+   * opacity blended from the dark accent and danger above. */
+  --audit-trail-surface-2: #161b22;
+  --audit-trail-info-bg: rgba(56, 139, 253, 0.15);
+  --audit-trail-info-fg: #79c0ff;
+  --audit-trail-error-bg: rgba(248, 81, 73, 0.15);
+  --audit-trail-error-fg: #ff7b72;
 }
 
 /* ---- Toolbar ---- */
