@@ -1,6 +1,6 @@
 {
   "name": "@everscribe/components-element",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Framework-agnostic <audit-trail> custom element for Everscribe.",
   "license": "MIT",
   "repository": {
@@ -29,6 +29,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./browser": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/browser.js"
     }
   },
   "files": [

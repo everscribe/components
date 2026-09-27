@@ -68,7 +68,17 @@ const OBSERVED = [
   'default-time-range',
 ] as const
 
-export class AuditTrailElement extends HTMLElement {
+// HTMLElement does not exist on a server, and a class declaration evaluates
+// its base at module load, so a bare `extends HTMLElement` threw on import in
+// every SSR framework. Extending a plain class there lets the module evaluate;
+// the define call in index.ts is already guarded, and the browser evaluates its
+// own copy against the real HTMLElement.
+const ElementBase: typeof HTMLElement =
+  typeof HTMLElement !== 'undefined'
+    ? HTMLElement
+    : (class {} as unknown as typeof HTMLElement)
+
+export class AuditTrailElement extends ElementBase {
   static get observedAttributes(): readonly string[] {
     return OBSERVED
   }
