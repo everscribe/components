@@ -8,5 +8,7 @@ export default defineConfig({
   sourcemap: true,
   external: ['react', 'react-dom', '@everscribe/components-core'],
   target: 'es2020',
-  treeshake: true,
+  // React App Router needs this in the shipped bundle, not just in source.
+  // Do not add `treeshake`: it re-emits through rollup and drops this.
+  banner: { js: "'use client'" },
 })
